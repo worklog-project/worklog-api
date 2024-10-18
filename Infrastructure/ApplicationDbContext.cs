@@ -1,18 +1,15 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using worklog_api.model;
+﻿using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 using worklog_api.Model;
-using worklog_api.Repository;
 
-namespace worklog_api.Infrastructure
+namespace worklog_api.Infrastructure{ 
+public class ApplicationDbContext : DbContext
 {
-    public class ApplicationDbContext : DbContext
-    {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
-        {
-        }
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
-        // Define DbSets for your entities (tables)
-        public DbSet<MekanikModel> MekanikRepository { get; set; }
-    }
+    public DbSet<MOLModel> MOLs { get; set; }
+    public DbSet<StatusHistoryModel> StatusHistories { get; set; }
+    public DbSet<MOLTrackingHistoryModel> MOLTrackingHistories { get; set; }
+}
+
 }
