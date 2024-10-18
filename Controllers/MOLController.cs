@@ -48,7 +48,7 @@ namespace worklog_api.Controllers
             {
                 ID = Guid.NewGuid(),
                 KodeNumber = molDto.KodeNumber,
-                Tanggal = molDto.Tanggal,
+                Tanggal = DateTime.Now,
                 WorkOrder = molDto.WorkOrder,
                 HourMeter = molDto.HourMeter,
                 KodeKomponen = molDto.KodeKomponen,

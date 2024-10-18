@@ -15,8 +15,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Add services to the container.
 builder.Services.AddControllers();
-builder.Services.AddScoped<IMOLService, MOLService>();
 builder.Services.AddScoped<IMOLRepository, MOLRepository>();
+builder.Services.AddScoped<IMOLService, MOLService>();
+builder.Services.AddSingleton<string>(provider => "Server=localhost,1433;Database=worklog;User Id=sa;Password=Superadmin123@;Encrypt=False;");
+
 
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

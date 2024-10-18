@@ -39,7 +39,7 @@ namespace worklog_api.Service
             {
                 throw new InternalServerError(e.Message);
             }
-            throw new InternalServerError("test error");
+            
 
         }
 
