@@ -3,6 +3,7 @@ using worklog_api.Controllers;
 using worklog_api.Service;
 using worklog_api.Repository;
 using Microsoft.EntityFrameworkCore;
+using worklog_api.error;
 using worklog_api.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +17,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddControllers();
 builder.Services.AddScoped<IMOLService, MOLService>();
 builder.Services.AddScoped<IMOLRepository, MOLRepository>();
+
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -38,6 +40,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+// Add your custom exception middleware
+app.ConfigureCustomExceptionMiddleware();
 
 app.UseHttpsRedirection();
 app.UseAuthorization();

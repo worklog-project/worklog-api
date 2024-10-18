@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.Elfie.Serialization;
+using worklog_api.error;
 using worklog_api.Model;
 using worklog_api.Repository;
 
@@ -27,7 +30,17 @@ namespace worklog_api.Service
 
         public async Task CreateMOL(MOLModel mol)
         {
-            await _molRepository.Create(mol);
+            try
+            {
+                await _molRepository.Create(mol);
+                
+            }
+            catch (Exception e)
+            {
+                throw new InternalServerError(e.Message);
+            }
+            throw new InternalServerError("test error");
+
         }
 
         public async Task UpdateMOL(MOLModel mol)

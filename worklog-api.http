@@ -1,5 +1,5 @@
-@worklog_api_HostAddress = http://localhost:44304
+@worklog_api_HostAddress = http://localhost:5001
 
-GET {{worklog_api_HostAddress}}/v1/api/worklog/GetListWorkLog
+GET {{worklog_api_HostAddress}}/v1/api/worklog
 Accept: application/json
 

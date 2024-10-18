@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using worklog_api.Infrastructure;
 using worklog_api.Model;
@@ -32,14 +33,23 @@ namespace worklog_api.Repository
 
         public async Task Create(MOLModel mol)
         {
-            await _context.MOLs.AddAsync(mol);
+            Console.Write("ini insert ke db");
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            _context.MOLs.Add(mol);
+            stopwatch.Stop();
+            Console.WriteLine("Time for adding entity: " + stopwatch.ElapsedMilliseconds + "ms");
+     
+            stopwatch.Restart();
             await _context.SaveChangesAsync();
+            stopwatch.Stop();
+            Console.WriteLine("Time for saving changes: " + stopwatch.ElapsedMilliseconds + "ms");
         }
 
         public async Task Update(MOLModel mol)
         {
             _context.MOLs.Update(mol);
-            await _context.SaveChangesAsync();
+            _context.SaveChanges();
         }
 
         public async Task Delete(Guid id)
