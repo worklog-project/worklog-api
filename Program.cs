@@ -16,7 +16,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddScoped<IMOLRepository, MOLRepository>();
+builder.Services.AddScoped<ILWORepository, LWORepository>();
+
 builder.Services.AddScoped<IMOLService, MOLService>();
+builder.Services.AddScoped<ILWOService, LWOService>();
 builder.Services.AddSingleton<string>(provider => "Server=localhost,1433;Database=worklog;User Id=sa;Password=Superadmin123@;Encrypt=False;");
 
 

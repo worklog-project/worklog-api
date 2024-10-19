@@ -23,7 +23,7 @@ namespace worklog_api.Repository
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
-                var command = new SqlCommand("SELECT * FROM mol", connection);
+                var command = new SqlCommand("SELECT * FROM MOL", connection);
 
                 using (var reader = await command.ExecuteReaderAsync())
                 {
@@ -32,18 +32,20 @@ namespace worklog_api.Repository
                         var mol = new MOLModel
                         {
                             ID = reader.GetGuid(reader.GetOrdinal("ID")),
-                            KodeNumber = reader.GetString(reader.GetOrdinal("KodeNumber")),
+                            KodeNumber = reader.GetString(reader.GetOrdinal("Kode_Number")),
                             Tanggal = reader.GetDateTime(reader.GetOrdinal("Tanggal")),
-                            WorkOrder = reader.GetString(reader.GetOrdinal("WorkOrder")),
-                            HourMeter = reader.GetInt32(reader.GetOrdinal("HourMeter")),
-                            KodeKomponen = reader.GetString(reader.GetOrdinal("KodeKomponen")),
-                            PartNumber = reader.GetString(reader.GetOrdinal("PartNumber")),
+                            WorkOrder = reader.GetString(reader.GetOrdinal("WO")),
+                            HourMeter = reader.GetInt32(reader.GetOrdinal("HM")),
+                            KodeKomponen = reader.GetString(reader.GetOrdinal("Kode_Komponen")),
+                            PartNumber = reader.GetString(reader.GetOrdinal("Part_Number")),
                             Description = reader.GetString(reader.GetOrdinal("Description")),
                             Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
                             Categories = reader.GetString(reader.GetOrdinal("Categories")),
                             Remark = reader.GetString(reader.GetOrdinal("Remark")),
-                            RequestBy = reader.GetString(reader.GetOrdinal("RequestBy")),
-                            Status = reader.GetString(reader.GetOrdinal("Status"))
+                            RequestBy = reader.GetString(reader.GetOrdinal("Request_By")),
+                            Status = reader.GetString(reader.GetOrdinal("Status")),
+                            Version = reader.GetInt32(reader.GetOrdinal("Version"))
+
                             // You may need to fetch StatusHistories and TrackingHistories in separate queries
                         };
                         molList.Add(mol);
@@ -61,7 +63,7 @@ namespace worklog_api.Repository
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
-                var command = new SqlCommand("SELECT * FROM mol WHERE ID = @ID", connection);
+                var command = new SqlCommand("SELECT * FROM MOL WHERE ID = @ID", connection);
                 command.Parameters.AddWithValue("@ID", id);
 
                 using (var reader = await command.ExecuteReaderAsync())
@@ -71,18 +73,19 @@ namespace worklog_api.Repository
                         mol = new MOLModel
                         {
                             ID = reader.GetGuid(reader.GetOrdinal("ID")),
-                            KodeNumber = reader.GetString(reader.GetOrdinal("KodeNumber")),
+                            KodeNumber = reader.GetString(reader.GetOrdinal("Kode_Number")),
                             Tanggal = reader.GetDateTime(reader.GetOrdinal("Tanggal")),
-                            WorkOrder = reader.GetString(reader.GetOrdinal("WorkOrder")),
-                            HourMeter = reader.GetInt32(reader.GetOrdinal("HourMeter")),
-                            KodeKomponen = reader.GetString(reader.GetOrdinal("KodeKomponen")),
-                            PartNumber = reader.GetString(reader.GetOrdinal("PartNumber")),
+                            WorkOrder = reader.GetString(reader.GetOrdinal("WO")),
+                            HourMeter = reader.GetInt32(reader.GetOrdinal("HM")),
+                            KodeKomponen = reader.GetString(reader.GetOrdinal("Kode_Komponen")),
+                            PartNumber = reader.GetString(reader.GetOrdinal("Part_Number")),
                             Description = reader.GetString(reader.GetOrdinal("Description")),
                             Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
                             Categories = reader.GetString(reader.GetOrdinal("Categories")),
                             Remark = reader.GetString(reader.GetOrdinal("Remark")),
-                            RequestBy = reader.GetString(reader.GetOrdinal("RequestBy")),
-                            Status = reader.GetString(reader.GetOrdinal("Status"))
+                            RequestBy = reader.GetString(reader.GetOrdinal("Request_By")),
+                            Status = reader.GetString(reader.GetOrdinal("Status")),
+                            Version = reader.GetInt32(reader.GetOrdinal("Version"))
                         };
                     }
                 }
@@ -96,14 +99,14 @@ namespace worklog_api.Repository
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
-                var command = new SqlCommand(@"INSERT INTO mol 
-                    (ID, KodeNumber, WorkOrder, HourMeter, KodeKomponen, PartNumber, Description, Quantity, Categories, Remark, RequestBy, Status) 
+                var command = new SqlCommand(@"INSERT INTO MOL 
+                    (ID, Kode_Number,Tanggal, WO, HM, Kode_Komponen, Part_Number, Description, Quantity, Categories, Remark, Request_By, Status, Version) 
                     VALUES 
-                    (@ID, @KodeNumber, @WorkOrder, @HourMeter, @KodeKomponen, @PartNumber, @Description, @Quantity, @Categories, @Remark, @RequestBy, @Status)", connection);
+                    (@ID, @KodeNumber,@Tanggal, @WorkOrder, @HourMeter, @KodeKomponen, @PartNumber, @Description, @Quantity, @Categories, @Remark, @RequestBy, @Status, @Version)", connection);
 
                 command.Parameters.AddWithValue("@ID", mol.ID);
                 command.Parameters.AddWithValue("@KodeNumber", mol.KodeNumber);
-                //command.Parameters.AddWithValue("@Tanggal", mol.Tanggal);
+                command.Parameters.AddWithValue("@Tanggal", mol.Tanggal);
                 command.Parameters.AddWithValue("@WorkOrder", mol.WorkOrder);
                 command.Parameters.AddWithValue("@HourMeter", mol.HourMeter);
                 command.Parameters.AddWithValue("@KodeKomponen", mol.KodeKomponen);
@@ -114,6 +117,7 @@ namespace worklog_api.Repository
                 command.Parameters.AddWithValue("@Remark", mol.Remark);
                 command.Parameters.AddWithValue("@RequestBy", mol.RequestBy);
                 command.Parameters.AddWithValue("@Status", mol.Status);
+                command.Parameters.AddWithValue("@Version", mol.Version);
 
                 await command.ExecuteNonQueryAsync();
             }
@@ -124,19 +128,20 @@ namespace worklog_api.Repository
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
-                var command = new SqlCommand(@"UPDATE mol SET 
-                    KodeNumber = @KodeNumber, 
+                var command = new SqlCommand(@"UPDATE MOL SET 
+                    Kode_Number = @KodeNumber, 
                     Tanggal = @Tanggal, 
-                    WorkOrder = @WorkOrder, 
-                    HourMeter = @HourMeter, 
-                    KodeKomponen = @KodeKomponen, 
-                    PartNumber = @PartNumber, 
+                    WO = @WorkOrder, 
+                    HM = @HourMeter, 
+                    Kode_Komponen = @KodeKomponen, 
+                    Part_Number = @PartNumber, 
                     Description = @Description, 
                     Quantity = @Quantity, 
                     Categories = @Categories, 
                     Remark = @Remark, 
-                    RequestBy = @RequestBy, 
-                    Status = @Status
+                    Request_By = @RequestBy, 
+                    Status = @Status,
+                    Version = @Version
                     WHERE ID = @ID", connection);
 
                 command.Parameters.AddWithValue("@ID", mol.ID);
@@ -152,6 +157,7 @@ namespace worklog_api.Repository
                 command.Parameters.AddWithValue("@Remark", mol.Remark);
                 command.Parameters.AddWithValue("@RequestBy", mol.RequestBy);
                 command.Parameters.AddWithValue("@Status", mol.Status);
+                command.Parameters.AddWithValue("@Version", mol.Version + 1);
 
                 await command.ExecuteNonQueryAsync();
             }
@@ -162,7 +168,7 @@ namespace worklog_api.Repository
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
-                var command = new SqlCommand("DELETE FROM mol WHERE ID = @ID", connection);
+                var command = new SqlCommand("DELETE FROM MOL WHERE ID = @ID", connection);
                 command.Parameters.AddWithValue("@ID", id);
 
                 await command.ExecuteNonQueryAsync();

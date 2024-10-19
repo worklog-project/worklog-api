@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace worklog_api.Model
 {
-    [Table("mol_tracking_history")]
+    [Table("MOL_Tracking_History")]
     public class MOLTrackingHistoryModel
     {
         [Key]

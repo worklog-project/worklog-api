@@ -20,11 +20,12 @@ namespace worklog_api.Model
         public string Remark { get; set; }
         public string RequestBy { get; set; }
         public string Status { get; set; }
+        public int Version { get; set; }
 
 
         // Navigation Properties
-        public ICollection<StatusHistoryModel> StatusHistories { get; set; }
-        public ICollection<MOLTrackingHistoryModel> TrackingHistories { get; set; }
+        public ICollection<StatusHistoryModel>? StatusHistories { get; set; }
+        public ICollection<MOLTrackingHistoryModel>? TrackingHistories { get; set; }
     }
 
 }
