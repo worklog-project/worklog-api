@@ -61,11 +61,12 @@ namespace worklog_api.Controllers
                     Errors = ModelState
                 });
 
+            // Mapping LWO DTO to Model
             var lwo = new LWOModel
             {
                 ID = Guid.NewGuid(),
                 WONumber = lwoDto.WONumber,
-                WODate = DateTime.Now,
+                WODate = DateTime.Now,  // assuming WODate is the current date, you can modify this if needed
                 WOType = lwoDto.WOType,
                 Activity = lwoDto.Activity,
                 HourMeter = lwoDto.HourMeter,
@@ -73,9 +74,25 @@ namespace worklog_api.Controllers
                 TimeEnd = lwoDto.TimeEnd,
                 PIC = lwoDto.PIC,
                 LWOType = lwoDto.LWOType,
-                Version = 1
+                Version = lwoDto.Version,
+                Metadata = lwoDto.Metadata?.Select(metaDto => new LWOMetadataModel
+                {
+                    ID = Guid.NewGuid(),
+                    LWOID = Guid.NewGuid(),  // this will be set when saving to the DB
+                    Komponen = metaDto.Komponen,
+                    Keterangan = metaDto.Keterangan,
+                    KodeUnit = metaDto.KodeUnit,
+                    Version = metaDto.Version,
+                    Images = metaDto.LWOImages?.Select(imgDto => new LWOImageModel
+                    {
+                        ID = Guid.NewGuid(),
+                        Path = imgDto.Path,
+                        ImageName = imgDto.ImageName
+                    }).ToList()
+                }).ToList()
             };
 
+            // Service call to create LWO along with metadata and images
             await _lwoService.CreateLWO(lwo);
 
             return CreatedAtAction(nameof(GetById), new { id = lwo.ID }, new
@@ -85,6 +102,7 @@ namespace worklog_api.Controllers
                 Data = lwo
             });
         }
+
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] LWOCreateDto lwoDto)
