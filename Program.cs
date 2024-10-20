@@ -12,10 +12,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddScoped<IMOLRepository, MOLRepository>();
 builder.Services.AddScoped<ILWORepository, LWORepository>();
+builder.Services.AddScoped<IMOLTrackingHistoryRepository, MOLTrackingHistoryRepository>();
 
 builder.Services.AddScoped<IMOLService, MOLService>();
 builder.Services.AddScoped<ILWOService, LWOService>();
-builder.Services.AddSingleton<string>(provider => "Server=localhost,1433;Database=worklog;User Id=sa;Password=Superadmin123@;Encrypt=False;");
+builder.Services.AddScoped<IMOLTrackingHistoryService, MOLTrackingHistoryService>();
+builder.Services.AddSingleton<string>(provider => "Server=worklog-staging.database.windows.net,1433;Initial Catalog=worklog;Persist Security Info=False;User ID=worklog;Password=Superadmin123@;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;");
 
 
 

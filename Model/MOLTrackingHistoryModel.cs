@@ -9,9 +9,9 @@ namespace worklog_api.Model
         [Key]
         public Guid ID { get; set; }
         public Guid MOLID { get; set; }
-        public string WRCode { get; set; }
+        public string? WRCode { get; set; }
         public string Status { get; set; }
-        public string AdditionalInfo { get; set; }
+        public string? AdditionalInfo { get; set; }
 
         // Navigation Property
         public MOLModel MOL { get; set; }

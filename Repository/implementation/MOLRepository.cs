@@ -59,10 +59,14 @@ namespace worklog_api.Repository
         public async Task<MOLModel> GetById(Guid id)
         {
             MOLModel mol = null;
+            List<MOLTrackingHistoryModel> trackingHistoryList = new List<MOLTrackingHistoryModel>();
+            List<StatusHistoryModel> statusHistoryList = new List<StatusHistoryModel>();
 
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
+
+                // Get MOL details
                 var command = new SqlCommand("SELECT * FROM MOL WHERE ID = @ID", connection);
                 command.Parameters.AddWithValue("@ID", id);
 
@@ -89,10 +93,61 @@ namespace worklog_api.Repository
                         };
                     }
                 }
+
+                if (mol != null)
+                {
+                    // Get MOL Tracking History
+                    var trackingCommand = new SqlCommand(@"
+                        SELECT * FROM MOL_Tracking_History 
+                        WHERE MOL_ID = @MOL_ID", connection);
+                    trackingCommand.Parameters.AddWithValue("@MOL_ID", mol.ID);
+
+                    using (var trackingReader = await trackingCommand.ExecuteReaderAsync())
+                    {
+                        while (await trackingReader.ReadAsync())
+                        {
+                            trackingHistoryList.Add(new MOLTrackingHistoryModel
+                            {
+                                ID = trackingReader.GetGuid(trackingReader.GetOrdinal("ID")),
+                                MOLID = trackingReader.GetGuid(trackingReader.GetOrdinal("MOL_ID")),
+                                WRCode = trackingReader.GetString(trackingReader.GetOrdinal("WR_Code")),
+                                Status = trackingReader.GetString(trackingReader.GetOrdinal("Status")),
+                                AdditionalInfo = trackingReader.GetString(trackingReader.GetOrdinal("Additional_Info"))
+                            });
+                        }
+                    }
+
+                    // Get MOL Status History
+                    var statusCommand = new SqlCommand(@"
+                        SELECT * FROM Status_History_MOL 
+                        WHERE MOL_ID = @MOL_ID", connection);
+                    statusCommand.Parameters.AddWithValue("@MOL_ID", mol.ID);
+
+                    using (var statusReader = await statusCommand.ExecuteReaderAsync())
+                    {
+                        while (await statusReader.ReadAsync())
+                        {
+                            statusHistoryList.Add(new StatusHistoryModel
+                            {
+                                ID = statusReader.GetGuid(statusReader.GetOrdinal("ID")),
+                                MOLID = statusReader.GetGuid(statusReader.GetOrdinal("MOL_ID")),
+                                Status = statusReader.GetString(statusReader.GetOrdinal("Status")),
+                                Remark = statusReader.GetString(statusReader.GetOrdinal("Remark")),
+                                CreateDate = statusReader.GetDateTime(statusReader.GetOrdinal("Create_Date")),
+                                UpdateDate = statusReader.GetDateTime(statusReader.GetOrdinal("Update_Date"))
+                            });
+                        }
+                    }
+
+                    // Assign the related lists to the MOL model
+                    mol.TrackingHistories = trackingHistoryList;
+                    mol.StatusHistories = statusHistoryList;
+                }
             }
 
             return mol;
         }
+
 
         public async Task Create(MOLModel mol)
         {
