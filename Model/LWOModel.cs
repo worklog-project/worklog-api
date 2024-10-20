@@ -22,6 +22,6 @@ namespace worklog_api.Model
         public int Version { get; set; }
 
         // Navigation properties
-        public ICollection<LWOMetadataModel>? LWOMetadata { get; set; }
+        public ICollection<LWOMetadataModel>? Metadata { get; set; }
     }
 }

@@ -25,6 +25,6 @@ namespace worklog_api.Model
         // Navigation properties
         public LWOModel LWO { get; set; }
 
-        public ICollection<LWOImageModel>? LWOImages { get; set; }
+        public ICollection<LWOImageModel>? Images { get; set; }
     }
 }
