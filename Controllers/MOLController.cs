@@ -5,16 +5,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using worklog_api.Model;
 using worklog_api.Model.dto;
+using worklog_api.payload;
 using worklog_api.Service;
 
 namespace worklog_api.Controllers
 {
-    public class ApiResponse<T>
-    {
-        public int StatusCode { get; set; }
-        public string Message { get; set; }
-        public T Data { get; set; }
-    }
+
 
     [Route("api/mol")]
     [ApiController]
