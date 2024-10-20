@@ -17,9 +17,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddControllers();
 builder.Services.AddScoped<IMOLRepository, MOLRepository>();
 builder.Services.AddScoped<ILWORepository, LWORepository>();
+builder.Services.AddScoped<IMOLTrackingHistoryRepository, MOLTrackingHistoryRepository>();
 
 builder.Services.AddScoped<IMOLService, MOLService>();
 builder.Services.AddScoped<ILWOService, LWOService>();
+builder.Services.AddScoped<IMOLTrackingHistoryService, MOLTrackingHistoryService>();
 builder.Services.AddSingleton<string>(provider => "Server=worklog-staging.database.windows.net,1433;Initial Catalog=worklog;Persist Security Info=False;User ID=worklog;Password=Superadmin123@;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;");
 
 
