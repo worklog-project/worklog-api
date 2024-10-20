@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http.HttpResults;
+
 namespace worklog_api.error;
 
 public class ExceptionMidddleware
@@ -33,7 +35,6 @@ public class ExceptionMidddleware
         };
 
         context.Response.StatusCode = statusCode;
-
         return context.Response.WriteAsync(new ErrorDetails()
         {
             StatusCode = context.Response.StatusCode,

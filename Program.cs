@@ -4,14 +4,9 @@ using worklog_api.Service;
 using worklog_api.Repository;
 using Microsoft.EntityFrameworkCore;
 using worklog_api.error;
-using worklog_api.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-// Register DbContext with the connection string
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add services to the container.
 builder.Services.AddControllers();
