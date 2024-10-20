@@ -11,5 +11,5 @@ namespace worklog_api.Repository
         Task Create(LWOModel lwo);        // Method to create a new LWO
         Task Update(LWOModel lwo);        // Method to update an existing LWO
         Task Delete(Guid id);             // Method to delete an LWO by ID
-    }
+    } 
 }
