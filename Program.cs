@@ -1,9 +1,11 @@
+using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authentication.Negotiate;
 using worklog_api.Controllers;
 using worklog_api.Service;
 using worklog_api.Repository;
 using Microsoft.EntityFrameworkCore;
 using worklog_api.error;
+using worklog_api.filters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +18,8 @@ builder.Services.AddScoped<IMOLTrackingHistoryRepository, MOLTrackingHistoryRepo
 
 builder.Services.AddScoped<IMOLService, MOLService>();
 builder.Services.AddScoped<ILWOService, LWOService>();
+builder.Services.AddScoped<IUserService,UserService>();
+builder.Services.AddScoped<JWTConfiguration>();
 builder.Services.AddScoped<IMOLTrackingHistoryService, MOLTrackingHistoryService>();
 builder.Services.AddSingleton<string>(provider => "Server=worklog-staging.database.windows.net,1433;Initial Catalog=worklog;Persist Security Info=False;User ID=worklog;Password=Superadmin123@;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;");
 
@@ -25,14 +29,13 @@ builder.Services.AddSingleton<string>(provider => "Server=worklog-staging.databa
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-//builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
-//   .AddNegotiate();
 
-//builder.Services.AddAuthorization(options =>
-//{
-//    // By default, all incoming requests will be authorized according to the default policy.
-//    options.FallbackPolicy = options.DefaultPolicy;
-//});
+// Call the JWT configuration method
+var serviceProvider = builder.Services.BuildServiceProvider();
+// Resolve JWTConfiguration and call AddJWTConfiguration
+var jwtConfig = serviceProvider.GetRequiredService<JWTConfiguration>();
+jwtConfig.ConfigureServices(builder.Services);
+
 
 var app = builder.Build();
 
@@ -46,6 +49,7 @@ if (app.Environment.IsDevelopment())
 app.ConfigureCustomExceptionMiddleware();
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers(); // This maps your controllers automatically.
 app.Run();

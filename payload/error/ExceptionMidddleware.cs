@@ -1,14 +1,17 @@
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 
 namespace worklog_api.error;
 
 public class ExceptionMidddleware
 {
     private readonly RequestDelegate _next;
+    private readonly ProblemDetailsFactory _problemDetailsFactory;
 
-    public ExceptionMidddleware(RequestDelegate next)
+    public ExceptionMidddleware(RequestDelegate next, ProblemDetailsFactory problemDetailsFactory)
     {
         _next = next;
+        _problemDetailsFactory = problemDetailsFactory;
     }
 
     public async Task InvokeAsync(HttpContext httpContext)
@@ -23,7 +26,7 @@ public class ExceptionMidddleware
         }
     }
 
-    private static Task HandleExceptionAsync(HttpContext context, Exception exception)
+    private  Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/json";
 
@@ -31,14 +34,19 @@ public class ExceptionMidddleware
         {
             NotFoundException _ => (StatusCodes.Status404NotFound, "Resource not found"),
             InternalServerError _ => (StatusCodes.Status500InternalServerError, "Internal Server Error"),
+            BadRequestException _ => (StatusCodes.Status400BadRequest, "Bad Request"),
+            AuthorizationException _ => (StatusCodes.Status401Unauthorized, "Unauthorized"),
+            ForbiddenException _ => (StatusCodes.Status403Forbidden, "Forbidden"),
             _ => (StatusCodes.Status500InternalServerError, "Internal server error")
         };
 
         context.Response.StatusCode = statusCode;
-        return context.Response.WriteAsync(new ErrorDetails()
-        {
-            StatusCode = context.Response.StatusCode,
-            Message = message
-        }.ToString());
+        var problemDetails = _problemDetailsFactory.CreateProblemDetails(
+            context,
+            statusCode: statusCode,
+            title: message
+        );
+        problemDetails.Extensions.Add("errors",exception.Message);
+        return context.Response.WriteAsJsonAsync(problemDetails);
     }
 }
