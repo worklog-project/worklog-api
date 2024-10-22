@@ -9,6 +9,15 @@ using worklog_api.filters;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAllOrigins", builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyHeader()
+               .AllowAnyMethod();
+    });
+});
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -47,9 +56,10 @@ if (app.Environment.IsDevelopment())
 }
 // Add your custom exception middleware
 app.ConfigureCustomExceptionMiddleware();
-
+app.UseCors("AllowAllOrigins");
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers(); // This maps your controllers automatically.
+Console.WriteLine("APP RUN SUCCESSFULLY");
 app.Run();
