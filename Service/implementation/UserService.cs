@@ -127,7 +127,7 @@ public class UserService : IUserService
             issuer: jwtIssuer,
             audience: jwtAudience,
             claims: claims,
-            expires: DateTime.Now.AddMinutes(5),
+            expires: DateTime.Now.AddDays(2),
             signingCredentials: creds);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
