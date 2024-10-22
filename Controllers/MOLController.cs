@@ -62,6 +62,7 @@ namespace worklog_api.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] MOLCreateDTO molDto)
         {
+            Console.WriteLine("Create MOL");
             if (!ModelState.IsValid)
             {
                 return BadRequest(new ApiResponse<object>

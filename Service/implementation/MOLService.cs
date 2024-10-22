@@ -30,6 +30,7 @@ namespace worklog_api.Service
 
         public async Task CreateMOL(MOLModel mol)
         {
+            Console.WriteLine("Create MOL");
             try
             {
                 await _molRepository.Create(mol);
@@ -37,6 +38,7 @@ namespace worklog_api.Service
             }
             catch (Exception e)
             {
+                Console.WriteLine(e.Message);
                 throw new InternalServerError(e.Message);
             }
             

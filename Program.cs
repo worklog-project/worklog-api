@@ -48,4 +48,5 @@ app.ConfigureCustomExceptionMiddleware();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers(); // This maps your controllers automatically.
+Console.WriteLine("APP RUN SUCCESSFULLY");
 app.Run();
