@@ -23,19 +23,29 @@ namespace worklog_api.Controllers
             _molService = molService;
         }
 
-        [Authorize]
-        [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10,
-            [FromQuery] string sortBy = "RequestBy", [FromQuery] string sortDirection = "ASC",
-            [FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null)
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAll(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string sortBy = "Request_By",
+            [FromQuery] string sortDirection = "ASC",
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] string requestBy = null)  // New search parameter
         {
-            var mols = (await _molService.GetAllMOLs(pageNumber, pageSize, sortBy, sortDirection, startDate, endDate)).ToList();
-            var response = new ApiResponse<List<MOLModel>>
+            var (mols, totalCount) = await _molService.GetAllMOLs(pageNumber, pageSize, sortBy, sortDirection, startDate, endDate, requestBy);
+
+            var response = new ApiResponse<object>
             {
                 StatusCode = 200,
                 Message = "Success get MOLs",
-                Data = mols
+                Data = new
+                {
+                    TotalCount = totalCount,
+                    Mols = mols
+                }
             };
+
             return Ok(response);
         }
 

@@ -21,10 +21,9 @@ namespace worklog_api.Service
             _statusHistoryRepository = statusHistoryRepository;
         }
 
-        public async Task<IEnumerable<MOLModel>> GetAllMOLs(int pageNumber, int pageSize, string sortBy, string sortDirection, DateTime? startDate, DateTime? endDate)
+        public async Task<(IEnumerable<MOLModel> mols, int totalCount)> GetAllMOLs(int pageNumber, int pageSize, string sortBy, string sortDirection, DateTime? startDate, DateTime? endDate, string requestBy)
         {
-            // Here you call the repository method and possibly add business logic
-            return await _molRepository.GetAll(pageNumber, pageSize, sortBy, sortDirection, startDate, endDate);
+            return await _molRepository.GetAll(pageNumber, pageSize, sortBy, sortDirection, startDate, endDate, requestBy);
         }
 
         public async Task<MOLModel> GetMOLById(Guid id)

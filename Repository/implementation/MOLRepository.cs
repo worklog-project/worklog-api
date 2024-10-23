@@ -17,68 +17,43 @@ namespace worklog_api.Repository
             _connectionString = connectionString;
         }
 
-        public async Task<IEnumerable<MOLModel>> GetAll(int pageNumber, int pageSize, string sortBy, string sortDirection, DateTime? startDate, DateTime? endDate)
+        public async Task<(IEnumerable<MOLModel> mols, int totalCount)> GetAll(int pageNumber, int pageSize, string sortBy, string sortDirection, DateTime? startDate, DateTime? endDate, string requestBy)
         {
             var molList = new List<MOLModel>();
+            int totalCount = 0;
 
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
 
-                // Calculate the number of rows to skip
-                int offset = (pageNumber - 1) * pageSize;
+                // Build the query to fetch MOL records and count in one go
+                var query = @"
+                -- Fetch MOL records
+                SELECT * FROM MOL 
+                WHERE (@startDate IS NULL OR Tanggal >= @startDate) 
+                AND (@endDate IS NULL OR Tanggal <= @endDate)
+                AND (@requestBy IS NULL OR Request_By LIKE '%' + @requestBy + '%')
+                ORDER BY " + sortBy + " " + sortDirection + @" 
+                OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;
 
-                // Build dynamic SQL query based on input parameters
-                var query = new StringBuilder(@"
-                    SELECT * FROM MOL
-                    WHERE 1 = 1");
+                -- Get total count of matching records
+                SELECT COUNT(*) FROM MOL
+                WHERE (@startDate IS NULL OR Tanggal >= @startDate)
+                AND (@endDate IS NULL OR Tanggal <= @endDate)
+                AND (@requestBy IS NULL OR Request_By LIKE '%' + @requestBy + '%');
+        ";
 
-                // Add date filtering based on available parameters
-                if (startDate.HasValue && endDate.HasValue)
-                {
-                    query.Append(" AND Tanggal BETWEEN @StartDate AND @EndDate");
-                }
-                else if (startDate.HasValue)
-                {
-                    query.Append(" AND Tanggal >= @StartDate");
-                }
-                else if (endDate.HasValue)
-                {
-                    query.Append(" AND Tanggal <= @EndDate");
-                }
+                var command = new SqlCommand(query, connection);
+                command.Parameters.AddWithValue("@startDate", (object)startDate ?? DBNull.Value);
+                command.Parameters.AddWithValue("@endDate", (object)endDate ?? DBNull.Value);
+                command.Parameters.AddWithValue("@requestBy", (object)requestBy ?? DBNull.Value);
+                command.Parameters.AddWithValue("@offset", (pageNumber - 1) * pageSize);
+                command.Parameters.AddWithValue("@pageSize", pageSize);
 
-                // Add sorting
-                if (!string.IsNullOrEmpty(sortBy))
-                {
-                    query.Append($" ORDER BY {sortBy} {sortDirection}");
-                }
-                else
-                {
-                    query.Append(" ORDER BY Tanggal DESC"); // Default sorting by date in descending order
-                }
-
-                // Add pagination using OFFSET and FETCH
-                query.Append(" OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY");
-
-                var command = new SqlCommand(query.ToString(), connection);
-
-                // Add parameters for pagination
-                command.Parameters.AddWithValue("@Offset", offset);
-                command.Parameters.AddWithValue("@PageSize", pageSize);
-
-                // Add parameters for date filtering
-                if (startDate.HasValue)
-                {
-                    command.Parameters.AddWithValue("@StartDate", startDate.Value);
-                }
-
-                if (endDate.HasValue)
-                {
-                    command.Parameters.AddWithValue("@EndDate", endDate.Value);
-                }
-
+                // Execute the command and process the results
                 using (var reader = await command.ExecuteReaderAsync())
                 {
+                    // First result set: MOL records
                     while (await reader.ReadAsync())
                     {
                         var mol = new MOLModel
@@ -98,15 +73,19 @@ namespace worklog_api.Repository
                             Status = reader.GetString(reader.GetOrdinal("Status")),
                             Version = reader.GetInt32(reader.GetOrdinal("Version"))
                         };
-
                         molList.Add(mol);
+                    }
+
+                    // Move to the second result set: Total count of records
+                    if (await reader.NextResultAsync() && await reader.ReadAsync())
+                    {
+                        totalCount = reader.GetInt32(0);
                     }
                 }
             }
 
-            return molList;
+            return (molList, totalCount);
         }
-
 
         public async Task<MOLModel> GetById(Guid id)
         {

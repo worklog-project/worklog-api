@@ -7,7 +7,7 @@ namespace worklog_api.Repository
 {
     public interface IMOLRepository
     {
-        Task<IEnumerable<MOLModel>> GetAll(int pageNumber, int pageSize, string sortBy, string sortDirection, DateTime? startDate, DateTime? endDate);
+        Task<(IEnumerable<MOLModel> mols, int totalCount)> GetAll(int pageNumber, int pageSize, string sortBy, string sortDirection, DateTime? startDate, DateTime? endDate, string requestBy);
         Task<MOLModel> GetById(Guid id);
         Task Create(MOLModel mol);
         Task Update(MOLModel mol);
