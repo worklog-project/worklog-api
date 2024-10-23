@@ -21,6 +21,10 @@ namespace worklog_api.Model
         public string KodeUnit { get; set; }
 
         public int Version { get; set; }
+        public string CreatedBy { get; set; }
+        public string UpdatedBy { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
 
         // Navigation properties
         public LWOModel LWO { get; set; }

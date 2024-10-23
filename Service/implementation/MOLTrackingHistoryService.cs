@@ -26,7 +26,7 @@ namespace worklog_api.Service
             }
 
             // check MOL Status
-            if (mol.Status != "APPROVED_BY_DATA_PLANNER")
+            if (mol.Status != "APPROVED_DATA_PLANNER")
             {
                 throw new System.Exception("MOL is not in the correct status to be tracked");
             }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using worklog_api.Model.dto;
 using worklog_api.payload;
 using worklog_api.Service;
+using worklog_api.helper;
 
 namespace worklog_api.Controllers;
 
@@ -29,14 +30,16 @@ public class UserController : ControllerBase
                loginResponse));
     }
     
-    [Authorize(Policy = "RequireGroupLeader")]
+    //[Authorize(Policy = "RequireGroupLeader")]
     [HttpGet]
     public async Task<IActionResult> Test()
     {
+        var user = JWT.GetUserInfo(HttpContext);
+
         return Ok(new ApiResponse<String>(
             StatusCodes.Status200OK,
             "login success",
-            "test endpoint group leader"));
+           $"test endpoint for group leader, User: {user.username}, Role: {user.role}"));
     }
     
 }

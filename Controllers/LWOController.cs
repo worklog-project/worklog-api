@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
 using worklog_api.Model;
@@ -7,6 +8,7 @@ using worklog_api.Service;
 
 namespace worklog_api.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/lwo")]
     public class LWOController : ControllerBase
@@ -107,14 +109,6 @@ namespace worklog_api.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] LWOCreateDto lwoDto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(new
-                {
-                    StatusCode = 400,
-                    Message = "Invalid data",
-                    Errors = ModelState
-                });
-
             var existingLwo = await _lwoService.GetLWOById(id);
             if (existingLwo == null)
                 return NotFound(new
