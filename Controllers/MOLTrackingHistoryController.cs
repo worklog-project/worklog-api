@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
 using worklog_api.Model;
@@ -18,20 +19,10 @@ namespace worklog_api.Controllers
             _molTrackingHistoryService = molTrackingHistoryService;
         }
 
+        [Authorize(Policy = "RequireDataPlanner")]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] MOLTrackingHistoryCreateDto dto)
         {
-            // Validate the incoming request
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(new
-                {
-                    StatusCode = 400,
-                    Message = "Invalid data",
-                    Errors = ModelState
-                });
-            }
-
             // Map the DTO to the Model inside the controller
             var trackingHistory = new MOLTrackingHistoryModel
             {

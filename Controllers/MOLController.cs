@@ -1,12 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using worklog_api.Model;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using worklog_api.Model.dto;
+using worklog_api.Model;
 using worklog_api.payload;
 using worklog_api.Service;
+using worklog_api.error;
+using worklog_api.helper;
+using Humanizer;
 
 namespace worklog_api.Controllers
 {
@@ -23,10 +23,13 @@ namespace worklog_api.Controllers
             _molService = molService;
         }
 
+        [Authorize]
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10,
+            [FromQuery] string sortBy = "RequestBy", [FromQuery] string sortDirection = "ASC",
+            [FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null)
         {
-            var mols = (await _molService.GetAllMOLs()).ToList();
+            var mols = (await _molService.GetAllMOLs(pageNumber, pageSize, sortBy, sortDirection, startDate, endDate)).ToList();
             var response = new ApiResponse<List<MOLModel>>
             {
                 StatusCode = 200,
@@ -42,12 +45,7 @@ namespace worklog_api.Controllers
             var mol = await _molService.GetMOLById(id);
             if (mol == null)
             {
-                return NotFound(new ApiResponse<object>
-                {
-                    StatusCode = 404,
-                    Message = "MOL not found",
-                    Data = null
-                });
+                return NotFound(new NotFoundException("Mol Not Found"));
             }
 
             var response = new ApiResponse<MOLModel>
@@ -59,19 +57,11 @@ namespace worklog_api.Controllers
             return Ok(response);
         }
 
+        [Authorize(Policy = "RequireMekanik")]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] MOLCreateDTO molDto)
         {
-            Console.WriteLine("Create MOL");
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(new ApiResponse<object>
-                {
-                    StatusCode = 400,
-                    Message = "Invalid data",
-                    Data = ModelState
-                });
-            }
+            var user = JWT.GetUserInfo(HttpContext);
 
             var mol = new MOLModel
             {
@@ -86,9 +76,13 @@ namespace worklog_api.Controllers
                 Quantity = molDto.Quantity,
                 Categories = molDto.Categories,
                 Remark = molDto.Remark,
-                RequestBy = molDto.RequestBy,
+                RequestBy = user.username,
                 Status = molDto.Status,
                 Version = 1,
+                CreatedAt = DateTime.Now,
+                CreatedBy = user.username,
+                UpdatedAt = DateTime.Now,
+                UpdatedBy = user.username,
                 StatusHistories = new List<StatusHistoryModel>(),
                 TrackingHistories = new List<MOLTrackingHistoryModel>()
             };
@@ -105,9 +99,12 @@ namespace worklog_api.Controllers
             return CreatedAtAction(nameof(GetById), new { id = mol.ID }, response);
         }
 
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] MOLModel mol)
         {
+            var user = JWT.GetUserInfo(HttpContext);
+
             if (id != mol.ID)
             {
                 return BadRequest(new ApiResponse<object>
@@ -117,6 +114,9 @@ namespace worklog_api.Controllers
                     Data = null
                 });
             }
+
+            mol.UpdatedAt = DateTime.Now;
+            mol.UpdatedBy = user.username;
 
             var existingMol = await _molService.GetMOLById(id);
             if (existingMol == null)
@@ -142,6 +142,7 @@ namespace worklog_api.Controllers
             return Ok(response);
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -163,6 +164,37 @@ namespace worklog_api.Controllers
                 StatusCode = 200,
                 Message = "MOL deleted successfully",
                 Data = existingMol
+            };
+
+            return Ok(response);
+        }
+
+        [Authorize]
+        [HttpPost("approve")]
+        public async Task<IActionResult> Approve([FromBody] StatusHistoryDTO StatusHistory)
+        {
+
+            var user = JWT.GetUserInfo(HttpContext);
+
+            var status = new StatusHistoryModel
+            {
+                ID = Guid.NewGuid(),
+                MOLID = StatusHistory.MOLID,
+                Remark = StatusHistory.Remark,
+                Version = 1,
+                CreatedAt = DateTime.Now,
+                CreatedBy = user.username,
+                UpdatedAt = DateTime.Now,
+                UpdatedBy = user.username
+            };
+
+            await _molService.ApproveMOL(status, user);
+
+            var response = new ApiResponse<string>
+            {
+                StatusCode = 200,
+                Message = "MOL approved successfully",
+                Data = "Approved"
             };
 
             return Ok(response);

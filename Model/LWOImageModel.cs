@@ -16,6 +16,10 @@ namespace worklog_api.Model
         public string Path { get; set; }
 
         public string ImageName { get; set; }
+        public string CreatedBy { get; set; }
+        public string UpdatedBy { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
 
         // Navigation properties
         public LWOMetadataModel LWOMetadata { get; set; }

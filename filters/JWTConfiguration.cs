@@ -124,6 +124,63 @@ public class JWTConfiguration
                 return true;
             })
         );
+        options.AddPolicy("RequireMekanik", policy =>
+            policy.RequireAssertion(context =>
+            {
+                 var claims = context.User.Claims.ToList();
+                 foreach (var claim in claims)
+                 {
+                     Console.WriteLine(claim);
+                 }
+                 var hasRequiredClaim = context.User.HasClaim(c =>
+                     c.Type == "roles"
+                 );
+                 var hasRolesClaim = context.User.HasClaim(c =>
+                     c.Value == "Mekanik"
+                 );
+                 if (!hasRequiredClaim)
+                 {
+                     _logger.LogWarning("Authorization failed: Token does not have the required role claim.");
+                     throw new AuthorizationException("Authorization failed: Token does not have the required role claim.");
+                 }
+                 if (!hasRolesClaim)
+                 {
+                     _logger.LogWarning("Authorization failed: User does not have the required 'Group-Leader' role claim.");
+                     throw new ForbiddenException("forbidden for this user");
+                 }
+                 _logger.LogInformation("Authorization succeeded for role 'User'.");
+                 return true;
+            })
+        );
+
+        options.AddPolicy("RequireDataPlanner", policy =>
+            policy.RequireAssertion(context =>
+            {
+                 var claims = context.User.Claims.ToList();
+                 foreach (var claim in claims)
+                 {
+                     Console.WriteLine(claim);
+                 }
+                 var hasRequiredClaim = context.User.HasClaim(c =>
+                     c.Type == "roles"
+                 );
+                 var hasRolesClaim = context.User.HasClaim(c =>
+                     c.Value == "Data Planner"
+                 );
+                 if (!hasRequiredClaim)
+                 {
+                     _logger.LogWarning("Authorization failed: Token does not have the required role claim.");
+                     throw new AuthorizationException("Authorization failed: Token does not have the required role claim.");
+                 }
+                 if (!hasRolesClaim)
+                 {
+                     _logger.LogWarning("Authorization failed: User does not have the required 'Group-Leader' role claim.");
+                     throw new ForbiddenException("forbidden for this user");
+                 }
+                 _logger.LogInformation("Authorization succeeded for role 'User'.");
+                 return true;
+            })
+        );
     });
 
     _logger.LogInformation("JWT Configuration added successfully");

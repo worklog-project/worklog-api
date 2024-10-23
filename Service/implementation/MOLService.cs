@@ -6,21 +6,25 @@ using Microsoft.CodeAnalysis.Elfie.Serialization;
 using worklog_api.error;
 using worklog_api.Model;
 using worklog_api.Repository;
+using worklog_api.Repository.implementation;
 
 namespace worklog_api.Service
 {
     public class MOLService : IMOLService
     {
         private readonly IMOLRepository _molRepository;
+        private readonly IStatusHistoryRepository _statusHistoryRepository;
 
-        public MOLService(IMOLRepository molRepository)
+        public MOLService(IMOLRepository molRepository, IStatusHistoryRepository statusHistoryRepository)
         {
             _molRepository = molRepository;
+            _statusHistoryRepository = statusHistoryRepository;
         }
 
-        public async Task<IEnumerable<MOLModel>> GetAllMOLs()
+        public async Task<IEnumerable<MOLModel>> GetAllMOLs(int pageNumber, int pageSize, string sortBy, string sortDirection, DateTime? startDate, DateTime? endDate)
         {
-            return await _molRepository.GetAll();
+            // Here you call the repository method and possibly add business logic
+            return await _molRepository.GetAll(pageNumber, pageSize, sortBy, sortDirection, startDate, endDate);
         }
 
         public async Task<MOLModel> GetMOLById(Guid id)
@@ -41,8 +45,6 @@ namespace worklog_api.Service
                 Console.WriteLine(e.Message);
                 throw new InternalServerError(e.Message);
             }
-            
-
         }
 
         public async Task UpdateMOL(MOLModel mol)
@@ -53,6 +55,39 @@ namespace worklog_api.Service
         public async Task DeleteMOL(Guid id)
         {
             await _molRepository.Delete(id);
+        }
+
+        public async Task ApproveMOL(StatusHistoryModel status, UserModel user)
+        {
+            var mol = await _molRepository.GetById(status.MOLID);
+            if (mol == null)
+            {
+                throw new NotFoundException("MOL Not Found");
+            }
+
+            if (user.role == "Group Leader" && mol.Status == "PENDING")
+            {
+                status.Status = "APPROVED_GROUP_LEADER";
+            } 
+            else if (user.role == "Data Planner" && mol.Status == "APPROVED_GROUP_LEADER") 
+            {
+                status.Status = "APPROVED_DATA_PLANNER";
+            }
+            else
+            {
+                throw new AuthorizationException("Invalid Role Or Status Already Updated");
+            }
+
+            try
+            {
+                await _statusHistoryRepository.Create(status);
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                throw new InternalServerError(e.Message);
+            }
         }
     }
 }
