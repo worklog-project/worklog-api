@@ -1,4 +1,3 @@
-
 using System.IdentityModel.Tokens.Jwt;
 using worklog_api.Model.dto;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages;
@@ -11,60 +10,151 @@ using Novell.Directory.Ldap;
 
 
 namespace worklog_api.Service;
+
 public class UserService : IUserService
 {
+    private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly ILogger<UserService> _logger;
     private readonly IConfiguration _configuration;
-    
-    private string ldapHost ;
-    private int ldapPort ;
+
+    private string ldapHost;
+    private int ldapPort;
+    private string adUsername;
+    private string adPassword;
     private string baseDN;
     private string jwtSecret; // At least 32 characters
     private string jwtIssuer;
     private string jwtAudience;
 
 
-    public UserService(ILogger<UserService> logger, IConfiguration configuration)
+    public UserService(ILogger<UserService> logger, IConfiguration configuration, JwtSecurityTokenHandler jwtSecurityTokenHandler)
     {
+        _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _logger = logger;
         _configuration = configuration;
-        
+
         ldapHost = _configuration["LdapSettings:Host"];
         ldapPort = int.Parse(_configuration["LdapSettings:Port"]);
         baseDN = _configuration["LdapSettings:BaseDN"];
         jwtSecret = _configuration["JwtSettings:Secret"];
         jwtIssuer = _configuration["JwtSettings:Issuer"];
         jwtAudience = _configuration["JwtSettings:Audience"];
+        adUsername = _configuration["LdapSettings:ADUSER"];
+        adPassword = _configuration["LdapSettings:ADPASS"];
     }
-    
+
     public async Task<LoginResponse> Login(LoginRequest loginRequest)
     {
         var authenticateUser = AuthenticateUser(loginRequest.username, loginRequest.password);
+        var refreshJwtToken = GenerateJwtToken(loginRequest.username, null, "refresh");
         var loginResponse = new LoginResponse();
         loginResponse.access_token = authenticateUser;
+        loginResponse.refresh_token = refreshJwtToken;
         return loginResponse;
     }
-    
+
+    public async Task<LoginResponse> RefreshToken(RefreshTokenRequest refreshTokenRequest)
+    {
+        
+        var tokenHandler = _jwtSecurityTokenHandler;
+
+        // Check if it's a Bearer token
+        if (!refreshTokenRequest.RefreshToken.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning("Refresh token refresh token is invalid");
+            throw new AuthorizationException("Token must be a Bearer token");
+        }
+
+        // Remove 'Bearer ' prefix if present
+        var token = refreshTokenRequest.RefreshToken.Replace("Bearer ", "", StringComparison.OrdinalIgnoreCase);
+        
+        try
+        {
+            // Validate the existing token
+            var principal = tokenHandler.ValidateToken(token,
+                new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:Secret"])),
+                    ValidateIssuer = true,
+                    ValidIssuer = _configuration["JwtSettings:Issuer"],
+                    ValidateAudience = true,
+                    ValidAudience = _configuration["JwtSettings:Audience"],
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.Zero
+                },
+                out SecurityToken validatedToken);
+
+            // Extract user information from the token
+            var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                _logger.LogWarning("Refresh token refresh token is invalid : id null");
+                throw new AuthorizationException("Invalid token");
+            }
+
+            string userPrincipalName = $"{adUsername}@kpp.com";
+            var userRoles = GetUserRoles(userPrincipalName, adPassword, userId);
+            // Generate new tokens
+
+            var generateJwtToken = GenerateJwtToken(userId, userRoles, "access");
+
+            // Return new tokens
+            return new LoginResponse(generateJwtToken, token);
+        }
+        catch (SecurityTokenExpiredException)
+        {
+            throw new AuthorizationException("Refresh Token has expired");
+        }
+        catch (SecurityTokenInvalidIssuerException)
+        {
+            _logger.LogWarning("Refresh token is invalid : invalid issuer");
+            throw new AuthorizationException("Invalid token");
+        }
+        catch (SecurityTokenInvalidAudienceException)
+        {
+            _logger.LogWarning("Refresh token is invalid : invalid audience");
+            throw new AuthorizationException("Invalid token");
+        }
+        catch (SecurityTokenSignatureKeyNotFoundException)
+        {
+            _logger.LogWarning("Refresh token is invalid : invalid signature key");
+            throw new AuthorizationException("Invalid token");
+        }
+        catch (Exception ex)
+        {
+            // Log the error
+            _logger.LogError($"Refresh Token failed: {ex.Message}");
+            throw new AuthorizationException("Refresh Token failed");
+        }
+    }
+
     public string AuthenticateUser(string username, string password)
     {
-        string userDN = $"userPrincipalName={username},CN=Users,{baseDN}";
         string userPrincipalName = $"{username}@kpp.com";
+        var userRoles = GetUserRoles(userPrincipalName, password, username);
+        var generateJwtToken = GenerateJwtToken(username, userRoles, "access");
+        
+        return generateJwtToken;
+    }
 
+    public List<String> GetUserRoles(string username, string password, string usernameLooked)
+    {
         try
         {
             List<string> roles = new List<string>();
             using (var conn = new LdapConnection())
             {
                 conn.Connect(ldapHost, ldapPort);
-                _logger.LogInformation($"Attempting to bind with DN: {userDN}");
-                conn.Bind(userPrincipalName, password);
+                _logger.LogInformation($"Attempting to bind with DN: {username}");
+                conn.Bind(username, password);
                 _logger.LogInformation($"User {username} authenticated successfully.");
                 
                 string[] attributes = { "memberOf" };
                 var results = conn.Search(
                     baseDN,
                     LdapConnection.SCOPE_SUB,
-                    $"(sAMAccountName={username})",
+                    $"(sAMAccountName={usernameLooked})",
                     attributes,
                     false
                 );
@@ -83,9 +173,8 @@ public class UserService : IUserService
                         }
                     }
                 }
-                var generateJwtToken = GenerateJwtToken(username, roles);
-                return generateJwtToken;
             }
+            return roles;
         }
         catch (LdapException e)
         {
@@ -107,7 +196,7 @@ public class UserService : IUserService
     }
 
     
-    public string GenerateJwtToken(string username, List<string> roles)
+    public string GenerateJwtToken(string username, List<string> roles, string flag)
     {
         var claims = new List<Claim>
         {
@@ -115,21 +204,45 @@ public class UserService : IUserService
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
 
-        foreach (var role in roles)
+        if (roles != null)
         {
-            claims.Add(new Claim("roles", role));
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim("roles", role));
+            } 
         }
+        SymmetricSecurityKey key  = null;
+        SigningCredentials creds = null;
+        JwtSecurityToken token =null;
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var token = new JwtSecurityToken(
-            issuer: jwtIssuer,
-            audience: jwtAudience,
-            claims: claims,
-            expires: DateTime.Now.AddDays(2),
-            signingCredentials: creds);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        if (flag == "access")
+        {
+            key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret));
+            creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            token = new JwtSecurityToken(
+                issuer: jwtIssuer,
+                audience: jwtAudience,
+                claims: claims,
+                expires: DateTime.Now.AddMinutes(30),
+                signingCredentials: creds);
+        }else if(flag == "refresh")
+        {
+            key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret));
+            creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            token = new JwtSecurityToken(
+                issuer: jwtIssuer,
+                audience: jwtAudience,
+                claims: claims,
+                expires: DateTime.Now.AddDays(5),
+                signingCredentials: creds);
+                    
+        }
+        else
+        {
+            throw new InternalServerError("errors when generating token");
+        }
+     
+        return _jwtSecurityTokenHandler.WriteToken(token);
     }
 }

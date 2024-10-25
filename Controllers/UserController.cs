@@ -30,10 +30,11 @@ public class UserController : ControllerBase
                loginResponse));
     }
     
-    [HttpPost]
-    public async Task<IActionResult> Refresh([FromBody] LoginRequest  loginRequest)
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest  refreshTokenRequest)
     {
-        var loginResponse = await _userService.Login(loginRequest);
+        Console.WriteLine(refreshTokenRequest.RefreshToken);
+        var loginResponse = await _userService.RefreshToken(refreshTokenRequest);
         return Ok(new ApiResponse<LoginResponse>(
             StatusCodes.Status200OK,
             "login success",

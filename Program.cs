@@ -33,6 +33,7 @@ builder.Services.AddScoped<IUserService,UserService>();
 builder.Services.AddScoped<JWTConfiguration>();
 builder.Services.AddScoped<IMOLTrackingHistoryService, MOLTrackingHistoryService>();
 builder.Services.AddSingleton<string>(provider => "Server=52.230.116.242,1433;Initial Catalog=worklog;Persist Security Info=False;User ID=sa;Password=Superadmin123@;MultipleActiveResultSets=False;Encrypt=False;Connection Timeout=30;");
+builder.Services.AddSingleton(new JwtSecurityTokenHandler());
 
 
 
