@@ -30,6 +30,18 @@ public class UserController : ControllerBase
                loginResponse));
     }
     
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest  refreshTokenRequest)
+    {
+        Console.WriteLine(refreshTokenRequest.RefreshToken);
+        var loginResponse = await _userService.RefreshToken(refreshTokenRequest);
+        return Ok(new ApiResponse<LoginResponse>(
+            StatusCodes.Status200OK,
+            "login success",
+            loginResponse));
+    }
+
+    
     //[Authorize(Policy = "RequireGroupLeader")]
     [HttpGet]
     public async Task<IActionResult> Test()
