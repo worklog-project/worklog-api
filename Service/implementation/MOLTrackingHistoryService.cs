@@ -8,6 +8,7 @@ namespace worklog_api.Service
     {
         private readonly IMOLTrackingHistoryRepository _repository;
         private readonly IMOLRepository _molRepository;
+        private readonly IStatusHistoryRepository _statusHistoryRepository;
 
         public MOLTrackingHistoryService(IMOLTrackingHistoryRepository repository, IMOLRepository molRepository)
         {
@@ -25,11 +26,17 @@ namespace worklog_api.Service
                 throw new System.Exception("MOL not found");
             }
 
-            // check MOL Status
-            if (mol.Status != "APPROVED_DATA_PLANNER")
+            if (mol.Status == "COMPLETED")
             {
-                throw new System.Exception("MOL is not in the correct status to be tracked");
+                throw new System.Exception("MOL Request Already Completed");
             }
+
+            // check MOL Status
+            if (mol.Status == trackingHistory.Status)
+            {
+                throw new System.Exception("MOL already updated");
+            }
+            
 
             await _repository.Create(trackingHistory);
         }

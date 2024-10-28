@@ -16,15 +16,16 @@ namespace worklog_api.Model
         public string PartNumber { get; set; }
         public string Description { get; set; }
         public int Quantity { get; set; }
+        public int QuantityApproved { get; set; }
         public string Categories { get; set; }
         public string Remark { get; set; }
         public string RequestBy { get; set; }
         public string Status { get; set; }
         public int Version { get; set; }
-        public string CreatedBy { get; set; }
-        public string UpdatedBy { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
+        public string? CreatedBy { get; set; }
+        public string? UpdatedBy { get; set; }
+        public DateTime? CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
 
 
         // Navigation Properties

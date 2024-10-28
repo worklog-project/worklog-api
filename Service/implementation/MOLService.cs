@@ -21,10 +21,11 @@ namespace worklog_api.Service
             _statusHistoryRepository = statusHistoryRepository;
         }
 
-        public async Task<(IEnumerable<MOLModel> mols, int totalCount)> GetAllMOLs(int pageNumber, int pageSize, string sortBy, string sortDirection, DateTime? startDate, DateTime? endDate, string requestBy)
+        public async Task<(IEnumerable<MOLModel> mols, int totalCount)> GetAllMOLs(int pageNumber, int pageSize, string sortBy, string sortDirection, DateTime? startDate, DateTime? endDate, string requestBy, string status)
         {
-            return await _molRepository.GetAll(pageNumber, pageSize, sortBy, sortDirection, startDate, endDate, requestBy);
+            return await _molRepository.GetAll(pageNumber, pageSize, sortBy, sortDirection, startDate, endDate, requestBy, status);
         }
+
 
         public async Task<MOLModel> GetMOLById(Guid id)
         {
@@ -56,7 +57,7 @@ namespace worklog_api.Service
             await _molRepository.Delete(id);
         }
 
-        public async Task ApproveMOL(StatusHistoryModel status, UserModel user)
+        public async Task ApproveMOL(StatusHistoryModel status, UserModel user, int quantityApproved)
         {
             var mol = await _molRepository.GetById(status.MOLID);
             if (mol == null)
@@ -67,6 +68,8 @@ namespace worklog_api.Service
             if (user.role == "Group Leader" && mol.Status == "PENDING")
             {
                 status.Status = "APPROVED_GROUP_LEADER";
+                await _molRepository.UpdateApprovedQuantity(mol.ID, quantityApproved);
+
             } 
             else if (user.role == "Data Planner" && mol.Status == "APPROVED_GROUP_LEADER") 
             {

@@ -31,9 +31,10 @@ namespace worklog_api.Controllers
             [FromQuery] string sortDirection = "ASC",
             [FromQuery] DateTime? startDate = null,
             [FromQuery] DateTime? endDate = null,
-            [FromQuery] string requestBy = null)  // New search parameter
+            [FromQuery] string requestBy = null,
+            [FromQuery] string status = null)  // New status parameter
         {
-            var (mols, totalCount) = await _molService.GetAllMOLs(pageNumber, pageSize, sortBy, sortDirection, startDate, endDate, requestBy);
+            var (mols, totalCount) = await _molService.GetAllMOLs(pageNumber, pageSize, sortBy, sortDirection, startDate, endDate, requestBy, status);
 
             var response = new ApiResponse<object>
             {
@@ -48,6 +49,7 @@ namespace worklog_api.Controllers
 
             return Ok(response);
         }
+
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
@@ -186,6 +188,8 @@ namespace worklog_api.Controllers
 
             var user = JWT.GetUserInfo(HttpContext);
 
+            var quantityApproved = StatusHistory.QuantityApproved;
+
             var status = new StatusHistoryModel
             {
                 ID = Guid.NewGuid(),
@@ -198,7 +202,7 @@ namespace worklog_api.Controllers
                 UpdatedBy = user.username
             };
 
-            await _molService.ApproveMOL(status, user);
+            await _molService.ApproveMOL(status, user, quantityApproved);
 
             var response = new ApiResponse<string>
             {

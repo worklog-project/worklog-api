@@ -5,6 +5,6 @@ namespace worklog_api.Service
 {
     public interface IMOLTrackingHistoryService
     {
-         Task  Create(MOLTrackingHistoryModel trackingHistory);
+        Task Create(MOLTrackingHistoryModel molTracking);
     }
 }

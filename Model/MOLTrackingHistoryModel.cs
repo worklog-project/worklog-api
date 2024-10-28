@@ -12,10 +12,10 @@ namespace worklog_api.Model
         public string? WRCode { get; set; }
         public string Status { get; set; }
         public string? AdditionalInfo { get; set; }
-        public string CreatedBy { get; set; }
-        public string UpdatedBy { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
+        public string? CreatedBy { get; set; }
+        public string? UpdatedBy { get; set; }
+        public DateTime? CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
 
         // Navigation Property
         public MOLModel MOL { get; set; }
