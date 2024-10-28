@@ -17,7 +17,7 @@ namespace worklog_api.Repository
             _connectionString = connectionString;
         }
 
-        public async Task<(IEnumerable<MOLModel> mols, int totalCount)> GetAll(int pageNumber, int pageSize, string sortBy, string sortDirection, DateTime? startDate, DateTime? endDate, string requestBy)
+        public async Task<(IEnumerable<MOLModel> mols, int totalCount)> GetAll(int pageNumber, int pageSize, string sortBy, string sortDirection, DateTime? startDate, DateTime? endDate, string requestBy, string status)
         {
             var molList = new List<MOLModel>();
             int totalCount = 0;
@@ -28,25 +28,28 @@ namespace worklog_api.Repository
 
                 // Build the query to fetch MOL records and count in one go
                 var query = @"
-                -- Fetch MOL records
-                SELECT * FROM MOL 
-                WHERE (@startDate IS NULL OR Tanggal >= @startDate) 
-                AND (@endDate IS NULL OR Tanggal <= @endDate)
-                AND (@requestBy IS NULL OR Request_By LIKE '%' + @requestBy + '%')
-                ORDER BY " + sortBy + " " + sortDirection + @" 
-                OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;
+                    -- Fetch MOL records
+                    SELECT * FROM MOL 
+                    WHERE (@startDate IS NULL OR Tanggal >= @startDate) 
+                    AND (@endDate IS NULL OR Tanggal <= @endDate)
+                    AND (@requestBy IS NULL OR Request_By LIKE '%' + @requestBy + '%')
+                    AND (@status IS NULL OR Status = @status)
+                    ORDER BY " + sortBy + " " + sortDirection + @" 
+                    OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;
 
-                -- Get total count of matching records
-                SELECT COUNT(*) FROM MOL
-                WHERE (@startDate IS NULL OR Tanggal >= @startDate)
-                AND (@endDate IS NULL OR Tanggal <= @endDate)
-                AND (@requestBy IS NULL OR Request_By LIKE '%' + @requestBy + '%');
-        ";
+                    -- Get total count of matching records
+                    SELECT COUNT(*) FROM MOL
+                    WHERE (@startDate IS NULL OR Tanggal >= @startDate)
+                    AND (@endDate IS NULL OR Tanggal <= @endDate)
+                    AND (@requestBy IS NULL OR Request_By LIKE '%' + @requestBy + '%')
+                    AND (@status IS NULL OR Status = @status);
+                    ";
 
                 var command = new SqlCommand(query, connection);
                 command.Parameters.AddWithValue("@startDate", (object)startDate ?? DBNull.Value);
                 command.Parameters.AddWithValue("@endDate", (object)endDate ?? DBNull.Value);
                 command.Parameters.AddWithValue("@requestBy", (object)requestBy ?? DBNull.Value);
+                command.Parameters.AddWithValue("@status", (object)status ?? DBNull.Value);
                 command.Parameters.AddWithValue("@offset", (pageNumber - 1) * pageSize);
                 command.Parameters.AddWithValue("@pageSize", pageSize);
 
@@ -71,7 +74,11 @@ namespace worklog_api.Repository
                             Remark = reader.GetString(reader.GetOrdinal("Remark")),
                             RequestBy = reader.GetString(reader.GetOrdinal("Request_By")),
                             Status = reader.GetString(reader.GetOrdinal("Status")),
-                            Version = reader.GetInt32(reader.GetOrdinal("Version"))
+                            Version = reader.GetInt32(reader.GetOrdinal("Version")),
+                            CreatedBy = reader.GetString(reader.GetOrdinal("Created_By")),
+                            UpdatedBy = reader.GetString(reader.GetOrdinal("Updated_By")),
+                            CreatedAt = reader.GetDateTime(reader.GetOrdinal("Created_At")),
+                            UpdatedAt = reader.GetDateTime(reader.GetOrdinal("Updated_At"))
                         };
                         molList.Add(mol);
                     }
@@ -120,7 +127,12 @@ namespace worklog_api.Repository
                             Remark = reader.GetString(reader.GetOrdinal("Remark")),
                             RequestBy = reader.GetString(reader.GetOrdinal("Request_By")),
                             Status = reader.GetString(reader.GetOrdinal("Status")),
-                            Version = reader.GetInt32(reader.GetOrdinal("Version"))
+                            Version = reader.GetInt32(reader.GetOrdinal("Version")),
+                            QuantityApproved = reader.GetInt32(reader.GetOrdinal("Approved_Quantity")),
+                            CreatedBy = reader.GetString(reader.GetOrdinal("Created_By")),
+                            UpdatedBy = reader.GetString(reader.GetOrdinal("Updated_By")),
+                            CreatedAt = reader.GetDateTime(reader.GetOrdinal("Created_At")),
+                            UpdatedAt = reader.GetDateTime(reader.GetOrdinal("Updated_At"))
                         };
                     }
                 }
@@ -130,7 +142,8 @@ namespace worklog_api.Repository
                     // Get MOL Tracking History
                     var trackingCommand = new SqlCommand(@"
                         SELECT * FROM MOL_Tracking_History 
-                        WHERE MOL_ID = @MOL_ID", connection);
+                        WHERE MOL_ID = @MOL_ID
+                        ORDER BY Created_At DESC", connection);
                     trackingCommand.Parameters.AddWithValue("@MOL_ID", mol.ID);
 
                     using (var trackingReader = await trackingCommand.ExecuteReaderAsync())
@@ -143,7 +156,11 @@ namespace worklog_api.Repository
                                 MOLID = trackingReader.GetGuid(trackingReader.GetOrdinal("MOL_ID")),
                                 WRCode = trackingReader.GetString(trackingReader.GetOrdinal("WR_Code")),
                                 Status = trackingReader.GetString(trackingReader.GetOrdinal("Status")),
-                                AdditionalInfo = trackingReader.GetString(trackingReader.GetOrdinal("Additional_Info"))
+                                AdditionalInfo = trackingReader.GetString(trackingReader.GetOrdinal("Additional_Info")),
+                                CreatedAt = trackingReader.GetDateTime(trackingReader.GetOrdinal("Created_At")),
+                                UpdatedAt = trackingReader.GetDateTime(trackingReader.GetOrdinal("Updated_At")),
+                                CreatedBy = trackingReader.GetString(trackingReader.GetOrdinal("Created_By")),
+                                UpdatedBy = trackingReader.GetString(trackingReader.GetOrdinal("Updated_By")),
                             });
                         }
                     }
@@ -151,7 +168,8 @@ namespace worklog_api.Repository
                     // Get MOL Status History
                     var statusCommand = new SqlCommand(@"
                         SELECT * FROM Status_History_MOL 
-                        WHERE MOL_ID = @MOL_ID", connection);
+                        WHERE MOL_ID = @MOL_ID
+                        ORDER BY Created_At DESC", connection);
                     statusCommand.Parameters.AddWithValue("@MOL_ID", mol.ID);
 
                     using (var statusReader = await statusCommand.ExecuteReaderAsync())
@@ -165,7 +183,9 @@ namespace worklog_api.Repository
                                 Status = statusReader.GetString(statusReader.GetOrdinal("Status")),
                                 Remark = statusReader.GetString(statusReader.GetOrdinal("Remark")),
                                 CreatedAt = statusReader.GetDateTime(statusReader.GetOrdinal("Created_At")),
-                                UpdatedAt = statusReader.GetDateTime(statusReader.GetOrdinal("Updated_At"))
+                                UpdatedAt = statusReader.GetDateTime(statusReader.GetOrdinal("Updated_At")),
+                                CreatedBy = statusReader.GetString(statusReader.GetOrdinal("Created_By")),
+                                UpdatedBy = statusReader.GetString(statusReader.GetOrdinal("Updated_By")),
                             });
                         }
                     }
@@ -182,6 +202,10 @@ namespace worklog_api.Repository
 
         public async Task Create(MOLModel mol)
         {
+
+            Console.WriteLine("Create MOL");
+            Console.WriteLine(mol);
+
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
@@ -267,6 +291,17 @@ namespace worklog_api.Repository
 
                 await command.ExecuteNonQueryAsync();
             }
+        }
+
+        public async Task UpdateApprovedQuantity(Guid id, int quantityApproved)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+            var command = new SqlCommand("UPDATE MOL SET Approved_Quantity = @QuantityApproved WHERE ID = @ID", connection);
+            command.Parameters.AddWithValue("@QuantityApproved", quantityApproved);
+            command.Parameters.AddWithValue("@ID", id);
+
+            await command.ExecuteNonQueryAsync();
         }
     }
 }

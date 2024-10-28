@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using worklog_api.Model;
 using worklog_api.Model.dto;
 using worklog_api.Service;
+using worklog_api.helper;
 
 namespace worklog_api.Controllers
 {
@@ -23,6 +24,8 @@ namespace worklog_api.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] MOLTrackingHistoryCreateDto dto)
         {
+            var user = JWT.GetUserInfo(HttpContext);
+
             // Map the DTO to the Model inside the controller
             var trackingHistory = new MOLTrackingHistoryModel
             {
@@ -30,7 +33,11 @@ namespace worklog_api.Controllers
                 MOLID = dto.MOLID,
                 WRCode = dto.WRCode,
                 Status = dto.Status,
-                AdditionalInfo = dto.AdditionalInfo
+                AdditionalInfo = dto.AdditionalInfo,
+                CreatedBy = user.username,
+                CreatedAt = DateTime.Now,
+                UpdatedBy = user.username,
+                UpdatedAt = DateTime.Now,
             };
 
             // Call the service to handle the business logic

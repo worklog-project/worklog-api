@@ -5,5 +5,7 @@
         public Guid MOLID { get; set; }
         public string Remark { get; set; }
 
+        public int QuantityApproved { get; set; }
+
     }
 }
