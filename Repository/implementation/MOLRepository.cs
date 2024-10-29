@@ -30,17 +30,18 @@ namespace worklog_api.Repository
                 var query = @"
                     -- Fetch MOL records
                     SELECT * FROM MOL 
-                    WHERE (@startDate IS NULL OR Tanggal >= @startDate) 
-                    AND (@endDate IS NULL OR Tanggal <= @endDate)
+                    WHERE (@startDate IS NULL OR CAST(Tanggal AS DATE) >= CAST(@startDate AS DATE)) 
+                    AND (@endDate IS NULL OR CAST(Tanggal AS DATE) <= CAST(@endDate AS DATE))
                     AND (@requestBy IS NULL OR Request_By LIKE '%' + @requestBy + '%')
                     AND (@status IS NULL OR Status = @status)
                     ORDER BY " + sortBy + " " + sortDirection + @" 
                     OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;
 
+
                     -- Get total count of matching records
                     SELECT COUNT(*) FROM MOL
-                    WHERE (@startDate IS NULL OR Tanggal >= @startDate)
-                    AND (@endDate IS NULL OR Tanggal <= @endDate)
+                    WHERE (@startDate IS NULL OR CAST(Tanggal AS DATE) >= CAST(@startDate AS DATE))
+                    AND (@endDate IS NULL OR CAST(Tanggal AS DATE) <= CAST(@endDate AS DATE))
                     AND (@requestBy IS NULL OR Request_By LIKE '%' + @requestBy + '%')
                     AND (@status IS NULL OR Status = @status);
                     ";
