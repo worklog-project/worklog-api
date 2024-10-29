@@ -86,6 +86,7 @@ namespace worklog_api.Controllers
                 PartNumber = molDto.PartNumber,
                 Description = molDto.Description,
                 Quantity = molDto.Quantity,
+                QuantityApproved = 0,
                 Categories = molDto.Categories,
                 Remark = molDto.Remark,
                 RequestBy = user.username,

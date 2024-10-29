@@ -16,7 +16,7 @@ namespace worklog_api.Model
         public string PartNumber { get; set; }
         public string Description { get; set; }
         public int Quantity { get; set; }
-        public int QuantityApproved { get; set; }
+        public int? QuantityApproved { get; set; }
         public string Categories { get; set; }
         public string Remark { get; set; }
         public string RequestBy { get; set; }
