@@ -210,9 +210,9 @@ namespace worklog_api.Repository
             {
                 await connection.OpenAsync();
                 var command = new SqlCommand(@"INSERT INTO MOL 
-                    (ID, Kode_Number,Tanggal, WO, HM, Kode_Komponen, Part_Number, Description, Quantity, Categories, Remark, Request_By, Status, Version, Created_By, Updated_By, Created_At, Updated_At) 
+                    (ID, Kode_Number,Tanggal, WO, HM, Kode_Komponen, Part_Number, Description, Quantity, Categories, Remark, Request_By, Status, Version, Created_By, Updated_By, Created_At, Updated_At, Approved_Quantity) 
                     VALUES 
-                    (@ID, @KodeNumber,@Tanggal, @WorkOrder, @HourMeter, @KodeKomponen, @PartNumber, @Description, @Quantity, @Categories, @Remark, @RequestBy, @Status, @Version, @CreatedBy, @UpdatedBy, @CreatedAt, @UpdatedAt)", connection);
+                    (@ID, @KodeNumber,@Tanggal, @WorkOrder, @HourMeter, @KodeKomponen, @PartNumber, @Description, @Quantity, @Categories, @Remark, @RequestBy, @Status, @Version, @CreatedBy, @UpdatedBy, @CreatedAt, @UpdatedAt, @ApprovedQuantity)", connection);
 
                 command.Parameters.AddWithValue("@ID", mol.ID);
                 command.Parameters.AddWithValue("@KodeNumber", mol.KodeNumber);
@@ -232,6 +232,7 @@ namespace worklog_api.Repository
                 command.Parameters.AddWithValue("@UpdatedBy", mol.UpdatedBy);
                 command.Parameters.AddWithValue("@CreatedAt", mol.CreatedAt);
                 command.Parameters.AddWithValue("@UpdatedAt", mol.UpdatedAt);
+                command.Parameters.AddWithValue("@ApprovedQuantity", mol.QuantityApproved);
 
                 await command.ExecuteNonQueryAsync();
             }
