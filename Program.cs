@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using worklog_api.error;
 using worklog_api.filters;
 using worklog_api.Repository.implementation;
+using worklog_api.Service.implementation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,12 +27,16 @@ builder.Services.AddScoped<IMOLRepository, MOLRepository>();
 builder.Services.AddScoped<ILWORepository, LWORepository>();
 builder.Services.AddScoped<IMOLTrackingHistoryRepository, MOLTrackingHistoryRepository>();
 builder.Services.AddScoped<IStatusHistoryRepository, StatusHistoryRepository>();
+builder.Services.AddScoped<IDailyRepository, DailyRepository>();
+
 
 builder.Services.AddScoped<IMOLService, MOLService>();
 builder.Services.AddScoped<ILWOService, LWOService>();
 builder.Services.AddScoped<IUserService,UserService>();
 builder.Services.AddScoped<JWTConfiguration>();
 builder.Services.AddScoped<IMOLTrackingHistoryService, MOLTrackingHistoryService>();
+builder.Services.AddScoped<IDailyService, DailyService>();
+
 builder.Services.AddSingleton<string>(provider => "Server=52.230.116.242,1433;Initial Catalog=worklog;Persist Security Info=False;User ID=sa;Password=Superadmin123@;MultipleActiveResultSets=False;Encrypt=False;Connection Timeout=30;");
 builder.Services.AddSingleton(new JwtSecurityTokenHandler());
 
