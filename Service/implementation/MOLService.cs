@@ -91,5 +91,41 @@ namespace worklog_api.Service
                 throw new InternalServerError(e.Message);
             }
         }
+
+        public async Task Reject(StatusHistoryModel status, UserModel user)
+        {
+            var mol = await _molRepository.GetById(status.MOLID);
+            if (mol == null)
+            {
+                throw new NotFoundException("MOL Not Found");
+            }
+
+            if (mol.Status == "REJECTED")
+            {
+                throw new InternalServerError("MOL already rejected");
+            }
+
+            //if (user.role == "Group Leader" && mol.Status == "PENDING")
+            //{
+            //    status.Status = "REJECTED";
+            //}
+            //else
+            //{
+            //    throw new AuthorizationException("Invalid Role Or Status Already Updated");
+            //}
+
+            status.Status = "REJECTED";
+
+            try
+            {
+                await _statusHistoryRepository.Create(status);
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                throw new InternalServerError(e.Message);
+            }
+        }
     }
 }

@@ -13,5 +13,7 @@ namespace worklog_api.Service
         Task UpdateMOL(MOLModel mol);
         Task DeleteMOL(Guid id);
         Task ApproveMOL(StatusHistoryModel status, UserModel user, int quantityApproved);
+
+        Task Reject(StatusHistoryModel status, UserModel user);
     }
 }
