@@ -214,5 +214,35 @@ namespace worklog_api.Controllers
 
             return Ok(response);
         }
+
+        [Authorize]
+        [HttpPost("reject")]
+        public async Task<IActionResult> Reject([FromBody] StatusHistoryDTO StatusHistory)
+        {
+            var user = JWT.GetUserInfo(HttpContext);
+
+            var status = new StatusHistoryModel
+            {
+                ID = Guid.NewGuid(),
+                MOLID = StatusHistory.MOLID,
+                Remark = StatusHistory.Remark,
+                Version = 1,
+                CreatedAt = DateTime.Now,
+                CreatedBy = user.username,
+                UpdatedAt = DateTime.Now,
+                UpdatedBy = user.username
+            };
+
+            await _molService.Reject(status,user);
+
+            var response = new ApiResponse<string>
+            {
+                StatusCode = 200,
+                Message = "MOL rejected successfully",
+                Data = "Rejected"
+            };
+
+            return Ok(response);
+        }
     }
 }

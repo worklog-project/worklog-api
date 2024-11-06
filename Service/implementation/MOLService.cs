@@ -74,11 +74,48 @@ namespace worklog_api.Service
             else if (user.role == "Data Planner" && mol.Status == "APPROVED_GROUP_LEADER") 
             {
                 status.Status = "APPROVED_DATA_PLANNER";
+                await _molRepository.UpdateApprovedQuantity(mol.ID, quantityApproved);
             }
             else
             {
                 throw new AuthorizationException("Invalid Role Or Status Already Updated");
             }
+
+            try
+            {
+                await _statusHistoryRepository.Create(status);
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                throw new InternalServerError(e.Message);
+            }
+        }
+
+        public async Task Reject(StatusHistoryModel status, UserModel user)
+        {
+            var mol = await _molRepository.GetById(status.MOLID);
+            if (mol == null)
+            {
+                throw new NotFoundException("MOL Not Found");
+            }
+
+            if (mol.Status == "REJECTED")
+            {
+                throw new InternalServerError("MOL already rejected");
+            }
+
+            //if (user.role == "Group Leader" && mol.Status == "PENDING")
+            //{
+            //    status.Status = "REJECTED";
+            //}
+            //else
+            //{
+            //    throw new AuthorizationException("Invalid Role Or Status Already Updated");
+            //}
+
+            status.Status = "REJECTED";
 
             try
             {
