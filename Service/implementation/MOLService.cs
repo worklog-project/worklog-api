@@ -74,6 +74,7 @@ namespace worklog_api.Service
             else if (user.role == "Data Planner" && mol.Status == "APPROVED_GROUP_LEADER") 
             {
                 status.Status = "APPROVED_DATA_PLANNER";
+                await _molRepository.UpdateApprovedQuantity(mol.ID, quantityApproved);
             }
             else
             {
