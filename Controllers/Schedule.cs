@@ -26,7 +26,9 @@ public class ScheduleController : ControllerBase
     {
         var user = JWT.GetUserInfo(HttpContext);
 
-        await _scheduleService.Create(scheduleRequest);
+        //var schedule = Model.Schedule
+
+        //await _scheduleService.Create(scheduleRequest);
 
         var response = new ApiResponse<object>
         {
