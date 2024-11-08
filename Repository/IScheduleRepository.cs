@@ -6,6 +6,7 @@ namespace worklog_api.Repository
     public interface IScheduleRepository
     {
         Task Create(Schedule schedule);
-        Task<List<ScheduleDTO>> GetScheduleDetailsByMonth(DateTime scheduleMonth);
+        Task<Schedule> GetScheduleDetailsByMonth(DateTime scheduleMonth, Guid? egiId = null, Guid? cnId = null);
+        Task UpdateScheduleDetails(Guid scheduleId, List<ScheduleDetail> updatedDetails);
     }
 }

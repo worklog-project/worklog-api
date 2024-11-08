@@ -9,7 +9,7 @@ using worklog_api.Model;
 namespace worklog_api.Controllers;
 
 
-[Route("api/daily")]
+[Route("api/schedule")]
 [ApiController]
 public class ScheduleController : ControllerBase
 {
@@ -79,6 +79,82 @@ public class ScheduleController : ControllerBase
         return Ok(response);
     }
 
+    [Route("get-schedule")]
+    [HttpGet]
+    public async Task<IActionResult> GetScheduleDetails([FromQuery] DateTime scheduleMonth, [FromQuery] Guid? egiId = null, [FromQuery] Guid? cnId = null)
+    {
+        try
+        {
+            var schedules = await _scheduleService.GetScheduleDetailsByMonth(scheduleMonth, egiId, cnId);
+
+            var response = new ApiResponse<Schedule>
+            {
+                StatusCode = 200,
+                Message = "Success",
+                Data = schedules
+            };
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            var response = new ApiResponse<string>
+            {
+                StatusCode = 500,
+                Message = "An error occurred while retrieving schedule details.",
+                Data = ex.Message
+            };
+
+            return StatusCode(500, response);
+        }
+    }
+
+    [Route("update-schedule")]
+    [HttpPut]
+    public async Task<IActionResult> UpdateScheduleDetails([FromBody] Schedule updateScheduleRequest)
+    {
+        var user = JWT.GetUserInfo(HttpContext);
+
+        var updatedDetails = new List<ScheduleDetail>();
+
+        foreach (var detail in updateScheduleRequest.ScheduleDetails)
+        {
+            //if ID is not provided, it will be created as new
+            if (detail.ID == Guid.Empty)
+            {
+                detail.CreatedAt = DateTime.Now;
+                detail.CreatedBy = user.username;
+            }
+
+            updatedDetails.Add(new ScheduleDetail
+            {
+                ID = detail.ID,
+                PlannedDate = detail.PlannedDate, // Assuming detail.PlannedDate is already a DateTime
+                IsDone = detail.IsDone,
+                UpdatedAt = DateTime.Now,
+                CreatedAt = detail.CreatedAt,
+                CreatedBy = detail.CreatedBy,
+                UpdatedBy = user.username
+
+          
+            });
+        }
+
+        await _scheduleService.UpdateScheduleDetails(updateScheduleRequest.ID, updatedDetails);
+
+        var response = new ApiResponse<object>
+        {
+            StatusCode = 200,
+            Message = "Success update schedule",
+            Data = new
+            {
+                User = user,
+                Schedule = updateScheduleRequest
+            }
+        };
+
+        return Ok(response);
+    }
 
 
 }
