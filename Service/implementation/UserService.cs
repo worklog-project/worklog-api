@@ -224,7 +224,7 @@ public class UserService : IUserService
                 issuer: jwtIssuer,
                 audience: jwtAudience,
                 claims: claims,
-                expires: DateTime.Now.AddMinutes(30),
+                expires: DateTime.Now.AddDays(1),
                 signingCredentials: creds);
         }else if(flag == "refresh")
         {
