@@ -94,20 +94,24 @@ namespace worklog_api.Repository.implementation
             {
                 await connection.OpenAsync();
 
-                // Base query to retrieve a single schedule by ScheduleMonth, EGI_ID, and CN_ID if specified
+                // Base query to retrieve a single schedule by ScheduleMonth, EGI_ID, and CN_ID if specified, with joins to EGI and CN tables
                 var query = @"
-                    SELECT TOP 1 ID, EGI_ID, CN_ID, Schedule_Month, Created_By, Updated_By, Created_At, Updated_At 
-                    FROM schedule 
-                    WHERE YEAR(Schedule_Month) = @Year AND MONTH(Schedule_Month) = @Month";
+                SELECT TOP 1 
+                s.ID, s.EGI_ID, s.CN_ID, s.Schedule_Month, s.Created_By, s.Updated_By, s.Created_At, s.Updated_At,
+                e.EGI_Name AS EGI_Name, c.Code_Number AS CN_Name
+                FROM schedule s
+                LEFT JOIN EGI e ON s.EGI_ID = e.ID
+                LEFT JOIN EGI_Code_Number c ON s.CN_ID = c.ID
+                WHERE YEAR(s.Schedule_Month) = @Year AND MONTH(s.Schedule_Month) = @Month";
 
                 // Append additional filters if EGI_ID or CN_ID are provided
                 if (egiId.HasValue)
                 {
-                    query += " AND EGI_ID = @EGIID";
+                    query += " AND s.EGI_ID = @EGIID";
                 }
                 if (cnId.HasValue)
                 {
-                    query += " AND CN_ID = @CNID";
+                    query += " AND s.CN_ID = @CNID";
                 }
 
                 var scheduleCommand = new SqlCommand(query, connection);
@@ -137,7 +141,11 @@ namespace worklog_api.Repository.implementation
                             UpdatedBy = reader.GetString(reader.GetOrdinal("Updated_By")),
                             CreatedAt = reader.GetDateTime(reader.GetOrdinal("Created_At")),
                             UpdatedAt = reader.GetDateTime(reader.GetOrdinal("Updated_At")),
-                            ScheduleDetails = new List<ScheduleDetail>()
+                            ScheduleDetails = new List<ScheduleDetail>(),
+
+                            // Assuming that EGI and CN names are included in the Schedule object
+                            Egi = reader.IsDBNull(reader.GetOrdinal("EGI_Name")) ? null : reader.GetString(reader.GetOrdinal("EGI_Name")),
+                            CodeNumber = reader.IsDBNull(reader.GetOrdinal("CN_Name")) ? null : reader.GetString(reader.GetOrdinal("CN_Name"))
                         };
 
                         // Retrieve the schedule details for the specific schedule ID
