@@ -33,7 +33,7 @@ namespace worklog_api.Service.implementation
 
             try
             {
-                await _scheduleRepository.Create(schedule);
+                await _scheduleRepository.Create(schedule); 
 
             }
             catch (Exception e)
@@ -48,6 +48,7 @@ namespace worklog_api.Service.implementation
             try
             {
                 return await _scheduleRepository.GetScheduleDetailsByMonth(scheduleMonth, egiId, cnId);
+               
             }
             catch (Exception e)
             {
