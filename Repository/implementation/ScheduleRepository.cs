@@ -203,7 +203,7 @@ namespace worklog_api.Repository.implementation
                     try
                     {
                         // Fetch existing details for the schedule
-                        var existingDetails = new Dictionary<Guid, ScheduleDetail>();
+                        var existingDetails = new Dictionary<DateTime, ScheduleDetail>();
                         var getExistingDetailsCommand = new SqlCommand(
                             @"SELECT ID, Planned_Date, Is_Done, Daily_ID, Created_By, Updated_By, Created_At, Updated_At 
                               FROM schedule_detail 
@@ -225,17 +225,20 @@ namespace worklog_api.Repository.implementation
                                     CreatedAt = reader.GetDateTime(reader.GetOrdinal("Created_At")),
                                     UpdatedAt = reader.GetDateTime(reader.GetOrdinal("Updated_At"))
                                 };
-                                existingDetails[detail.ID] = detail;
+                                existingDetails[detail.PlannedDate] = detail;
                             }
                         }
 
                         // Determine which details to add, update, or delete
-                        var updatedDetailsDict = updatedDetails.ToDictionary(d => d.ID, d => d);
+                        // Use a composite key with PlannedDate or another unique field
+                        var updatedDetailsDict = updatedDetails.ToDictionary(d => d.PlannedDate, d => d);
+
+
 
                         // Update or Insert
                         foreach (var detail in updatedDetails)
                         {
-                            if (existingDetails.ContainsKey(detail.ID))
+                            if (existingDetails.ContainsKey(detail.PlannedDate))
                             {
                                 // Update existing detail
                                 var updateCommand = new SqlCommand(
@@ -273,16 +276,18 @@ namespace worklog_api.Repository.implementation
                         }
 
                         // Delete records that are no longer in the updated details
+                        // Delete records that are no longer in the updated details
                         foreach (var existingDetail in existingDetails)
                         {
                             if (!updatedDetailsDict.ContainsKey(existingDetail.Key))
                             {
                                 var deleteCommand = new SqlCommand(
                                     "DELETE FROM schedule_detail WHERE ID = @ID", connection, transaction);
-                                deleteCommand.Parameters.AddWithValue("@ID", existingDetail.Key);
+                                deleteCommand.Parameters.AddWithValue("@ID", existingDetail.Value.ID); // Use ID from existing detail
                                 await deleteCommand.ExecuteNonQueryAsync();
                             }
                         }
+
 
                         // Commit the transaction if all commands succeed
                         transaction.Commit();
