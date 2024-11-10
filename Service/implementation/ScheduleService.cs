@@ -47,18 +47,8 @@ namespace worklog_api.Service.implementation
         {
             try
             {
-                var schedule = await _scheduleRepository.GetScheduleDetailsByMonth(scheduleMonth, egiId, cnId);
-
-                if (schedule == null)
-                {
-                    throw new NotFoundException("Schedule not found");
-                }
-
-                return schedule;
-            }
-            catch (NotFoundException)
-            {
-                throw;
+                return await _scheduleRepository.GetScheduleDetailsByMonth(scheduleMonth, egiId, cnId);
+               
             }
             catch (Exception e)
             {
@@ -66,7 +56,6 @@ namespace worklog_api.Service.implementation
                 throw new InternalServerError("Error retrieving schedule details");
             }
         }
-
 
         public async Task UpdateScheduleDetails(Guid scheduleId, List<ScheduleDetail> updatedDetails)
         {
