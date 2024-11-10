@@ -247,7 +247,7 @@ namespace worklog_api.Repository.implementation
                                 updateCommand.Parameters.AddWithValue("@IsDone", detail.IsDone);
                                 updateCommand.Parameters.AddWithValue("@DailyID", detail.DailyID);
                                 updateCommand.Parameters.AddWithValue("@UpdatedBy", detail.UpdatedBy);
-                                updateCommand.Parameters.AddWithValue("@UpdatedAt", DateTime.UtcNow);
+                                updateCommand.Parameters.AddWithValue("@UpdatedAt", detail.UpdatedAt);
 
                                 await updateCommand.ExecuteNonQueryAsync();
                             }
@@ -255,14 +255,14 @@ namespace worklog_api.Repository.implementation
                             {
                                 // Insert new detail
                                 var insertCommand = new SqlCommand(
-                                    @"INSERT INTO schedule_detail (ID, Schedule_ID, Planned_Date, Is_Done, Daily_ID, Created_By, Created_At, Updated_By, Updated_At) 
-                                        VALUES (@ID, @ScheduleID, @PlannedDate, @IsDone, @DailyID, @CreatedBy, @CreatedAt, @UpdatedBy, @UpdatedAt)",
+                                    @"INSERT INTO schedule_detail (ID, Schedule_ID, Planned_Date, Is_Done,Daily_ID, Created_By, Created_At, Updated_By, Updated_At) 
+                                        VALUES (@ID, @ScheduleID, @PlannedDate, @IsDone, @CreatedBy, @CreatedAt, @UpdatedBy, @UpdatedAt)",
                                     connection, transaction);
                                 insertCommand.Parameters.AddWithValue("@ID", Guid.NewGuid());
                                 insertCommand.Parameters.AddWithValue("@ScheduleID", scheduleId);
                                 insertCommand.Parameters.AddWithValue("@PlannedDate", detail.PlannedDate);
                                 insertCommand.Parameters.AddWithValue("@IsDone", detail.IsDone);
-                                insertCommand.Parameters.AddWithValue("@DailyID", detail.DailyID);
+                                insertCommand.Parameters.AddWithValue("@DailyID", "00000000 - 0000 - 0000 - 0000 - 000000000000");
                                 insertCommand.Parameters.AddWithValue("@CreatedBy", detail.CreatedBy);
                                 insertCommand.Parameters.AddWithValue("@CreatedAt", detail.CreatedAt);
                                 insertCommand.Parameters.AddWithValue("@UpdatedBy", detail.UpdatedBy);

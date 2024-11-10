@@ -122,8 +122,12 @@ public class ScheduleController : ControllerBase
             //if ID is not provided, it will be created as new
             if (detail.ID == Guid.Empty)
             {
+                detail.ScheduleID = updateScheduleRequest.ID;
+                detail.IsDone = false;
                 detail.CreatedAt = DateTime.Now;
                 detail.CreatedBy = user.username;
+                detail.UpdatedAt = DateTime.Now;
+                detail.UpdatedBy = user.username;
             }
 
             updatedDetails.Add(new ScheduleDetail
