@@ -48,8 +48,8 @@ public class UserService : IUserService
         var authenticateUser = AuthenticateUser(loginRequest.username, loginRequest.password);
         var refreshJwtToken = GenerateJwtToken(loginRequest.username, null, "refresh");
         var loginResponse = new LoginResponse();
-        loginResponse.access_token = authenticateUser;
-        loginResponse.refresh_token = refreshJwtToken;
+        loginResponse._accessToken = authenticateUser;
+        loginResponse._refreshToken = refreshJwtToken;
         return loginResponse;
     }
 

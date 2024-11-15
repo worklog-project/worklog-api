@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Net;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using worklog_api.Model.dto;
 using worklog_api.payload;
 using worklog_api.Service;
 using worklog_api.helper;
+using worklog_api.Model.form;
 
 namespace worklog_api.Controllers;
 
@@ -79,6 +81,17 @@ public class DailyController : ControllerBase
         return Ok(response);
     }
 
-
-
+    [Route("form")]
+    [HttpPost]
+    public async Task<IActionResult> AddDaily([FromBody] DailyRequest dailyRequest)
+    {
+        var response =  await _dailyService.InsertDaily(dailyRequest);
+        return Ok(new ApiResponse<string>()
+        {
+            StatusCode = 201,
+            Message = "success created daily",
+            Data = response
+        });
+    }
+    
 }
