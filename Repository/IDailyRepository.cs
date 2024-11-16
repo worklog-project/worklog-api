@@ -1,6 +1,7 @@
 ﻿using worklog_api.Model;
 using worklog_api.Model.dto;
 using worklog_api.Model.form;
+using worklog_api.Repository.implementation;
 
 namespace worklog_api.Repository
 {
@@ -14,6 +15,11 @@ namespace worklog_api.Repository
         
         Task insertDaily(DailyModel dailyModel);
 
-        Task<Guid> insertDailyDetail(FormDTO formDTO, Guid generateId);
+        Task<Guid> insertDailyDetail(DailyModel dailyModel, Guid generateId);
+
+        Task<(IEnumerable<AllDailyWorkLogDTO> Items, int TotalCount)> GetPaginatedDailyWorkLogs(int pageNumber, int pageSize);
+         
+        Task<DailyModel> getDailyDetailById(Guid id);
+        
     }
 }

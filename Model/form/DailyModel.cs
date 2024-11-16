@@ -1,3 +1,5 @@
+using worklog_api.Model.dto;
+
 namespace worklog_api.Model.form;
 
 public class DailyModel
@@ -7,16 +9,27 @@ public class DailyModel
     public Guid _egiId {get; set;}
     public Guid _cnId {get; set;}
     public DateTime _date {get; set;}
+    
+    public int _hourmeter {get; set;}
+
+    public TimeSpan _startTime {get; set;}
+
+    public TimeSpan _endTime {get; set;}
+
+    public string _formType {get; set;}
+
     public int _count {get; set;}
     public string _groupLeader { get; set; }
     public string _mechanic { get; set;}
-    public string document {get; set;}
+    
+    public virtual Dictionary<string, object> _sheetDetail { get; set; }
+    public Guid _dailyId {get; set;}
 
     public DailyModel()
     {
     }
 
-    public DailyModel(Guid id, Guid egiId, Guid cnId, DateTime date, int count, string groupLeader, string mechanic, string document)
+    public DailyModel(Guid id, Guid egiId, Guid cnId, DateTime date, int count, string groupLeader, string mechanic, Dictionary<string, object> document, int hourMeter, TimeSpan startTime, TimeSpan endTime, string formType)
     {
         _id = id;
         _egiId = egiId;
@@ -25,6 +38,10 @@ public class DailyModel
         this._count = count;
         _groupLeader = groupLeader;
         _mechanic = mechanic;
-        this.document = document;
+        this._sheetDetail = document;
+        _hourmeter = hourMeter;
+        _startTime = startTime;
+        _endTime = endTime;
+        _formType = formType;
     }
 }

@@ -6,6 +6,7 @@ using worklog_api.payload;
 using worklog_api.Service;
 using worklog_api.helper;
 using worklog_api.Model.form;
+using worklog_api.Repository.implementation;
 
 namespace worklog_api.Controllers;
 
@@ -90,6 +91,32 @@ public class DailyController : ControllerBase
         {
             StatusCode = 201,
             Message = "success created daily",
+            Data = response
+        });
+    }
+    
+    [Route("form-all")]
+    [HttpGet]
+    public async Task<IActionResult> GetAllDaily([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    {
+        var response =  await _dailyService.GetAllDaily(page, pageSize);
+        return Ok(new ApiResponse<IEnumerable<AllDailyWorkLogDTO>>()
+        {
+            StatusCode = 200,
+            Message = "success get daily",
+            Data = response
+        });
+    }
+    
+    [Route("form-detail")]
+    [HttpGet]
+    public async Task<IActionResult> GetDailyDetail([FromQuery] string id)
+    {
+        var response =  await _dailyService.GetDailyDetailByID(id);
+        return Ok(new ApiResponse<DailyWorklogDetailResponse>()
+        {
+            StatusCode = 200,
+            Message = "success get daily detail",
             Data = response
         });
     }
