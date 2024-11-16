@@ -48,24 +48,25 @@ namespace worklog_api.Service.implementation
                 _startTime = dailyRequest._startTime,
                 _endTime = dailyRequest._endTime,
                 _formType = dailyRequest._formType,
-                _dailyId = dailyByEgiAndCodeNumberAndDate._id,
+                _dailyId = dailyByEgiAndCodeNumberAndDate != null ? dailyByEgiAndCodeNumberAndDate._id : Guid.Empty, // null
                 _groupLeader = dailyRequest._groupLeader,
                 _mechanic = dailyRequest._mechanic,
             };
             
-            if (dailyByEgiAndCodeNumberAndDate._count > 3)
-            {
-                throw new BadRequestException("Daily already has been filled");
-            }
-           
             if (dailyByEgiAndCodeNumberAndDate == null)
             {
-                await _dailyRepository.insertDaily(dailyModel);
+                var insertDaily = await _dailyRepository.insertDaily(dailyModel);
+                dailyModel._dailyId = insertDaily;
                 var dailyDetail =
                     await _dailyRepository.insertDailyDetail(dailyModel, generateId);
                 return dailyDetail.ToString();
             } else
             {
+                if (dailyByEgiAndCodeNumberAndDate._count > 3)
+                {
+                    throw new BadRequestException("Daily already has been filled");
+                }
+                
                 dailyRequest._dailyId = dailyByEgiAndCodeNumberAndDate._id;
                 var dailyDetail = await _dailyRepository.insertDailyDetail(dailyModel, generateId);
                 return dailyDetail.ToString();

@@ -13,7 +13,7 @@ namespace worklog_api.Repository
         
         Task<DailyModel> getDailyByEgiAndCodeNumberAndDate(string egi, string codeNumber, string date);
         
-        Task insertDaily(DailyModel dailyModel);
+        Task<Guid> insertDaily(DailyModel dailyModel);
 
         Task<Guid> insertDailyDetail(DailyModel dailyModel, Guid generateId);
 

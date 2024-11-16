@@ -2,6 +2,7 @@
 using System.Data;
 using System.Data.SqlClient;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using worklog_api.Model;
@@ -114,37 +115,44 @@ namespace worklog_api.Repository.implementation
                     }
                 }
             }
-
             return dailyModel;
         }
 
-        public async Task insertDaily(DailyModel dailyModel)
+        public async Task<Guid> insertDaily(DailyModel dailyModel)
         {
             var query = @"INSERT INTO daily_work_log 
-    (ID, DATE, CN_ID, EGI_ID, COUNT, GROUP_LEADER, MECHANIC) 
-VALUES (@id, @date, @cn_id, @egi_id, @count, @group_leader, @mechanic)";
+    (ID, DATE, CN_ID, EGI_ID, COUNT, GROUP_LEADER, MECHANIC) OUTPUT INSERTED.id
+VALUES (@Id, @date, @cn_id, @egi_id, @count, @group_leader, @mechanic)";
 
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
-                try
-                {
-                    var command = new SqlCommand(query, connection);
-                    command.Parameters.AddWithValue("@id", dailyModel._id);
-                    command.Parameters.AddWithValue("@date", dailyModel._date);
-                    command.Parameters.AddWithValue("@cn_id", dailyModel._cnId);
-                    command.Parameters.AddWithValue("@egi_id", dailyModel._egiId);
-                    command.Parameters.AddWithValue("@count", dailyModel._count);
-                    command.Parameters.AddWithValue("@group_leader", dailyModel._groupLeader);
-                    command.Parameters.AddWithValue("@mechanic", dailyModel._mechanic);
 
-                    await command.ExecuteNonQueryAsync();
-                }
-                catch (Exception e)
+                using (var transaction = connection.BeginTransaction())
                 {
-                    _logger.LogWarning(e.Message);
-                    throw;
+                    try
+                    {
+                        var command = new SqlCommand(query, connection, transaction);
+                        command.Parameters.AddWithValue("@Id", dailyModel._id);
+                        command.Parameters.AddWithValue("@date", dailyModel._date);
+                        command.Parameters.AddWithValue("@cn_id", dailyModel._cnId);
+                        command.Parameters.AddWithValue("@egi_id", dailyModel._egiId);
+                        command.Parameters.AddWithValue("@count", dailyModel._count);
+                        command.Parameters.AddWithValue("@group_leader", dailyModel._groupLeader);
+                        command.Parameters.AddWithValue("@mechanic", dailyModel._mechanic);
+                        
+                        Guid id = (Guid) await command.ExecuteScalarAsync();
+                        await transaction.CommitAsync();
+                        return id;
+                    }
+                    catch (Exception e) {
+                        _logger.LogWarning(e.Message);
+                        await transaction.RollbackAsync();
+                        throw;
+                    }
                 }
+
+                
             }
         }
 
