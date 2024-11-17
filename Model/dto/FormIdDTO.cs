@@ -1,4 +1,4 @@
-namespace worklog_api.Model.form;
+namespace worklog_api.Model.dto;
 
 public class FormIdDTO
 {

@@ -8,6 +8,7 @@ using worklog_api.error;
 using worklog_api.filters;
 using worklog_api.Repository.implementation;
 using worklog_api.Service.implementation;
+using worklog_api.helper;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,8 @@ builder.Services.AddScoped<IMOLTrackingHistoryRepository, MOLTrackingHistoryRepo
 builder.Services.AddScoped<IStatusHistoryRepository, StatusHistoryRepository>();
 builder.Services.AddScoped<IDailyRepository, DailyRepository>();
 builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
+builder.Services.AddScoped<IBacklogRepository, BacklogRepository>();
+
 
 
 builder.Services.AddScoped<IMOLService, MOLService>();
@@ -38,6 +41,8 @@ builder.Services.AddScoped<JWTConfiguration>();
 builder.Services.AddScoped<IMOLTrackingHistoryService, MOLTrackingHistoryService>();
 builder.Services.AddScoped<IDailyService, DailyService>();
 builder.Services.AddScoped<IScheduleService, ScheduleService>();
+builder.Services.AddScoped<IBacklogService, BacklogService>();
+builder.Services.AddScoped<IFileUploadHelper, FileUploadHelper>();
 
 builder.Services.AddSingleton<string>(provider => "Server=52.230.116.242,1433;Initial Catalog=worklog;Persist Security Info=False;User ID=sa;Password=Superadmin123@;MultipleActiveResultSets=True;Encrypt=False;Connection Timeout=30;");
 builder.Services.AddSingleton(new JwtSecurityTokenHandler());
@@ -70,6 +75,8 @@ app.UseCors("AllowAllOrigins");
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseStaticFiles();
+
 app.MapControllers(); // This maps your controllers automatically.
 Console.WriteLine("APP RUN SUCCESSFULLY");
 app.Run();
