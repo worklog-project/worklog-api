@@ -118,7 +118,10 @@ namespace worklog_api.Service.implementation
                 _endTime = dailyDetailById._endTime,
                 _formType = dailyDetailById._formType,
                 _groupLeader = dailyDetailById._groupLeader,
-                _mechanic = dailyDetailById._mechanic
+                _mechanic = dailyDetailById._mechanic,
+                _date = dailyDetailById._date.Date.ToString("yyyy-MM-dd"),
+                _cnid = dailyDetailById._cnId.ToString(),
+                
             };
         }
 
