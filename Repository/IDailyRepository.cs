@@ -12,13 +12,16 @@ namespace worklog_api.Repository
         
         Task<DailyModel> getDailyByEgiAndCodeNumberAndDate(string egi, string codeNumber, string date);
         
-        Task<Guid> insertDaily(DailyModel dailyModel);
+        Task<Guid> insertDaily(DailyModel dailyModel, Guid scheduleId);
 
-        Task<Guid> insertDailyDetail(DailyModel dailyModel, Guid generateId);
+        Task<Guid> insertDailyDetail(DailyModel dailyModel, Guid generateId, Guid scheduleId, int counted);
 
         Task<(IEnumerable<AllDailyWorkLogDTO> Items, int TotalCount)> GetPaginatedDailyWorkLogs(int pageNumber, int pageSize);
          
         Task<DailyModel> getDailyDetailById(Guid id);
+        
+        Task<string> GetEgiNameByID(string id);
+        Task<ScheduleDetail> GetScheduleDetailById(string id);
         
     }
 }
