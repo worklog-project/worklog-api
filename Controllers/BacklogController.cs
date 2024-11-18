@@ -4,6 +4,7 @@ using worklog_api.Model;
 using worklog_api.Model.dto;
 using System.Text.Json;
 using worklog_api.payload;
+using worklog_api.error;
 
 namespace worklog_api.Controllers
 {
@@ -19,6 +20,7 @@ namespace worklog_api.Controllers
         {
             _backlogService = backlogService;
         }
+
         [Route("create-backlog")]
         [HttpPost]
         public async Task<IActionResult> InsertBacklogAsync([FromForm] string backlogJson, [FromForm] BacklogImageDTO imageDTO)
@@ -26,15 +28,15 @@ namespace worklog_api.Controllers
             try
             {
                 if (imageDTO?.ImageFile == null || imageDTO.ImageFile.Length == 0)
-                    return BadRequest("Image is required");
+                    throw new BadRequestException("Image is required");
 
                 // Deserialize backlog JSON
                 var backlogDTO = JsonSerializer.Deserialize<BacklogDTO>(backlogJson,
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
                 if (backlogDTO == null)
-                    return BadRequest("Invalid backlog data");
-
+                    throw new BadRequestException("Invalid backlog data");
+                
                 var result = await _backlogService.InsertBacklogAsync(backlogDTO, imageDTO);
                 var response = new ApiResponse<object>
                 {
@@ -47,13 +49,13 @@ namespace worklog_api.Controllers
             }
             catch (JsonException ex)
             {
-                _logger.LogError(ex, "Error deserializing backlog data");
-                return BadRequest(new { error = "Invalid JSON format for backlog data" });
+                //_logger.LogError(ex.Message, "Error deserializing backlog data");
+                throw new BadRequestException("Invalid JSON format for backlog data" );
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in InsertBacklogAsync");
-                return BadRequest(new { error = "Failed to process the request" });
+                //_logger.LogError(ex, "Error in InsertBacklogAsync");
+                throw new BadRequestException("Failed to process the request");
             }
         }
 
@@ -64,7 +66,7 @@ namespace worklog_api.Controllers
             var backlog = await _backlogService.GetByIDAsync(backlogId);
 
             if (backlog == null)
-                return NotFound("Backlog not found");
+                throw new BadRequestException("Backlog not found");
 
             var response = new ApiResponse<object>
             {
@@ -77,13 +79,13 @@ namespace worklog_api.Controllers
         }
 
         [Route("delete-backlog")]
-        [HttpDelete]
+        [HttpPost]
         public async Task<IActionResult> DeleteBacklog([FromQuery] Guid backlogId)
         {
             var result = await _backlogService.DeleteBacklogAsync(backlogId);
 
             if (!result)
-                return NotFound("Backlog not found");
+                throw new BadRequestException("Backlog not found");
 
             var response = new ApiResponse<object>
             {
