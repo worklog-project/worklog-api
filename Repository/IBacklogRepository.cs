@@ -7,5 +7,7 @@ namespace worklog_api.Repository
         Task<Guid> InsertBacklogAsync(BacklogModel backlogModel, BacklogImageModel backlogImageModel);
         Task<BacklogModel> GetByIDAsync(Guid backlogID);
         Task<bool> DeleteBacklogAsync(Guid backlogId);
+        Task<List<BacklogModel>> GetByDailyDetailIDAsync(Guid dailyDetailId);
     }
+
 }

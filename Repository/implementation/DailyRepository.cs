@@ -174,13 +174,13 @@ VALUES (@Id, @date, @cn_id, @egi_id, @count)";
 
             // insert to daily worlog detail
             var query = @"INSERT INTO daily_work_log_detail 
-    (id, hour_meter, start_time, finish_time, additional_info, form_type, daily_work_log_id, group_leader, mechanic) OUTPUT INSERTED.id
-VALUES (@Id, @hour_meter, @start_time, @finish_time, @additional_info, @form_type, @daily_work_log_id, @group_leader, @mechanic)";
+                (id, hour_meter, start_time, finish_time, additional_info, form_type, daily_work_log_id, group_leader, mechanic) OUTPUT INSERTED.id
+            VALUES (@Id, @hour_meter, @start_time, @finish_time, @additional_info, @form_type, @daily_work_log_id, @group_leader, @mechanic)";
 
             // update count
             var updatedCountQuery = @"UPDATE daily_work_log 
-SET count = count + 1 OUTPUT INSERTED.count
-WHERE id = @id";
+            SET count = count + 1 OUTPUT INSERTED.count
+            WHERE id = @id";
             
             
             // update Daily
@@ -342,42 +342,40 @@ WHERE id = @id";
 //         }
 
 
-                public async Task<(IEnumerable<AllDailyWorkLogDTO> Items, int TotalCount)> GetPaginatedDailyWorkLogs(
-            int pageNumber,
-            int pageSize)
+        public async Task<(IEnumerable<AllDailyWorkLogDTO> Items, int TotalCount)> GetPaginatedDailyWorkLogs(int pageNumber,int pageSize)
         {
             // Input validation
             if (pageNumber < 1) pageNumber = 1;
             if (pageSize < 1) pageSize = 10;
 
             var query = @"
-WITH CountCTE AS (
-    SELECT COUNT(DISTINCT daily_work_log.id) AS TotalCount
-    FROM daily_work_log
-    JOIN dbo.EGI E ON daily_work_log.egi_id = E.ID
-    JOIN dbo.EGI_Code_Number cn ON daily_work_log.cn_id = cn.ID
-),
-PaginatedLogs AS (
-    SELECT 
-        daily_work_log.id,
-        E.EGI_Name,
-        cn.Code_Number,
-        date
-    FROM daily_work_log 
-    JOIN dbo.EGI E ON daily_work_log.egi_id = E.ID
-    JOIN dbo.EGI_Code_Number cn ON daily_work_log.cn_id = cn.ID
-    ORDER BY date DESC
-    OFFSET @Offset ROWS 
-    FETCH NEXT @PageSize ROWS ONLY
-)
-SELECT 
-    p.*,
-    dn_detail.id as detail_id,
-    dn_detail.form_type,
-    (SELECT TotalCount FROM CountCTE) as TotalCount
-FROM PaginatedLogs p
-LEFT JOIN dbo.daily_work_log_detail dn_detail ON p.id = dn_detail.daily_work_log_id
-ORDER BY p.date DESC, p.id";
+            WITH CountCTE AS (
+                SELECT COUNT(DISTINCT daily_work_log.id) AS TotalCount
+                FROM daily_work_log
+                JOIN dbo.EGI E ON daily_work_log.egi_id = E.ID
+                JOIN dbo.EGI_Code_Number cn ON daily_work_log.cn_id = cn.ID
+            ),
+            PaginatedLogs AS (
+                SELECT 
+                    daily_work_log.id,
+                    E.EGI_Name,
+                    cn.Code_Number,
+                    date
+                FROM daily_work_log 
+                JOIN dbo.EGI E ON daily_work_log.egi_id = E.ID
+                JOIN dbo.EGI_Code_Number cn ON daily_work_log.cn_id = cn.ID
+                ORDER BY date DESC
+                OFFSET @Offset ROWS 
+                FETCH NEXT @PageSize ROWS ONLY
+            )
+            SELECT 
+                p.*,
+                dn_detail.id as detail_id,
+                dn_detail.form_type,
+                (SELECT TotalCount FROM CountCTE) as TotalCount
+            FROM PaginatedLogs p
+            LEFT JOIN dbo.daily_work_log_detail dn_detail ON p.id = dn_detail.daily_work_log_id
+            ORDER BY p.date DESC, p.id";
 
             using (var connection = new SqlConnection(_connectionString))
             {

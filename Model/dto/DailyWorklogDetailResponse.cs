@@ -24,7 +24,10 @@ public class DailyWorklogDetailResponse
     
     [JsonPropertyName("mechanic")]
     public string _mechanic {get; set;}
-    
+
+    [JsonPropertyName("backlogs")]
+    public List<BacklogModel> _backlogs { get; set; }
+
     [JsonPropertyName("detailSheet")]
     [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public virtual Dictionary<string, object> _sheetDetail { get; set; }
