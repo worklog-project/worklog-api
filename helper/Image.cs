@@ -50,7 +50,9 @@ namespace worklog_api.helper
                 // Return relative path for database storage
                 var relativePath = Path.Combine(subDirectory, uniqueFileName).Replace("\\", "/");
 
-                return (uniqueFileName, relativePath);
+                var fullPath = Path.Combine("/uploads/", relativePath);
+
+                return (uniqueFileName, fullPath);
             }
             catch (Exception ex)
             {

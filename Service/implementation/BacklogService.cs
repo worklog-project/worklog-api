@@ -3,6 +3,8 @@ using worklog_api.Model;
 using worklog_api.Model.dto;
 using worklog_api.helper;
 using System.Net.Quic;
+using Microsoft.AspNetCore.Mvc;
+using worklog_api.error;
 
 namespace worklog_api.Service.implementation
 {
@@ -95,7 +97,7 @@ namespace worklog_api.Service.implementation
                 }
 
                 _logger.LogError(ex, "Error inserting backlog");
-                throw; // Re-throw the original exception
+                throw new InternalServerError("Error inserting backlog"); // Re-throw the original exception
             }
         }
 
@@ -103,5 +105,33 @@ namespace worklog_api.Service.implementation
         {
             return await _backlogRepository.GetByIDAsync(backlogID);
         }
+
+        public async Task<bool> DeleteBacklogAsync(Guid backlogID)
+        {
+            try
+            {
+                var backlog = await _backlogRepository.GetByIDAsync(backlogID);
+                if (backlog == null)
+                {
+                    throw new NotFoundException("Backlog not found");
+                }
+                await _backlogRepository.DeleteBacklogAsync(backlogID);
+                for (int i = 0; i < backlog.BacklogImages.Count; i++)
+                {
+                    _fileUploadHelper.DeleteFile(backlog.BacklogImages[i].FilePath);
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting backlog");
+                throw new InternalServerError("Backlog not found");
+                throw;
+            }
+             
+        }
     }
+
+
 }
