@@ -117,6 +117,8 @@ namespace worklog_api.Service.implementation
                 _startTime = dailyDetailById._startTime,
                 _endTime = dailyDetailById._endTime,
                 _formType = dailyDetailById._formType,
+                _groupLeader = dailyDetailById._groupLeader,
+                _mechanic = dailyDetailById._mechanic
             };
         }
 

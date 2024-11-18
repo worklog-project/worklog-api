@@ -468,6 +468,8 @@ ORDER BY p.date DESC, p.id";
                             _endTime = reader.GetTimeSpan(reader.GetOrdinal("finish_time")),
                             _formType = reader.GetString(reader.GetOrdinal("form_type")),
                             _dailyId = reader.GetGuid(reader.GetOrdinal("daily_work_log_id")),
+                            _groupLeader = reader.GetString(reader.GetOrdinal("group_leader")),
+                            _mechanic = reader.GetString(reader.GetOrdinal("mechanic")),
                         };
                     }
                 }
