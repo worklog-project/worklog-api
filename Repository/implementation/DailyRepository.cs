@@ -531,5 +531,39 @@ JOIN dbo.daily_work_log dwl on dwl.id = daily_work_log_detail.daily_work_log_id 
 
             return scheduleDetail;
         }
+
+        public async Task<bool> DeleteAllDailyWorkLogs(Guid scheduleId)
+        {
+            var query = @"DELETE FROM daily_work_log WHERE id = @id";
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                var sqlCommand = new SqlCommand(query, connection);
+                sqlCommand.Parameters.AddWithValue("@id", scheduleId);
+
+                var executeNonQueryAsync = await sqlCommand.ExecuteNonQueryAsync();
+
+                return executeNonQueryAsync > 0;
+            }
+        }
+
+        public async Task<bool> DeleteFormDaily(Guid scheduleId)
+        {
+            var query = @"DELETE FROM daily_work_log_detail WHERE id = @id";
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                var sqlCommand = new SqlCommand(query, connection);
+                sqlCommand.Parameters.AddWithValue("@id", scheduleId);
+
+                var executeNonQueryAsync = await sqlCommand.ExecuteNonQueryAsync();
+
+                return executeNonQueryAsync > 0;
+            }
+        }
     }
 }

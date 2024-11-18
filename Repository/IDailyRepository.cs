@@ -23,5 +23,8 @@ namespace worklog_api.Repository
         Task<string> GetEgiNameByID(string id);
         Task<ScheduleDetail> GetScheduleDetailById(string id);
         
+        Task <bool> DeleteAllDailyWorkLogs(Guid scheduleId);
+        Task <bool> DeleteFormDaily(Guid scheduleId);
+        
     }
 }
