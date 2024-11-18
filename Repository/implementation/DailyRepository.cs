@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using worklog_api.helper;
 using worklog_api.Model;
 using worklog_api.Model.dto;
 using JsonSerializer = System.Text.Json.JsonSerializer;
@@ -242,204 +243,221 @@ VALUES (@Id, @date, @cn_id, @egi_id, @count)";
             }
         }
 
-//         public async Task<(IEnumerable<AllDailyWorkLogDTO> Items, int TotalCount)> GetPaginatedDailyWorkLogs(
-//             int pageNumber, int pageSize, DateTime startDate, DateTime endDate)
-//         {
-//             // Input validation
-//     if (pageNumber < 1) pageNumber = 1;
-//     if (pageSize < 1) pageSize = 10;
-//
-//     // Construct base query with conditional WHERE clause
-//     var query = @"
-// WITH CountCTE AS (
-//     SELECT COUNT(DISTINCT daily_work_log.id) AS TotalCount
-//     FROM daily_work_log
-//     JOIN dbo.EGI E ON daily_work_log.egi_id = E.ID
-//     JOIN dbo.EGI_Code_Number cn ON daily_work_log.cn_id = cn.ID
-//     WHERE ((@StartDate IS NULL AND @EndDate IS NULL) 
-//            OR (daily_work_log.date >= @StartDate AND daily_work_log.date <= @EndDate))
-// ),
-// PaginatedLogs AS (
-//     SELECT 
-//         daily_work_log.id,
-//         E.EGI_Name,
-//         cn.Code_Number,
-//         date
-//     FROM daily_work_log 
-//     JOIN dbo.EGI E ON daily_work_log.egi_id = E.ID
-//     JOIN dbo.EGI_Code_Number cn ON daily_work_log.cn_id = cn.ID
-//     WHERE ((@StartDate IS NULL AND @EndDate IS NULL) 
-//            OR (daily_work_log.date >= @StartDate AND daily_work_log.date <= @EndDate))
-//     ORDER BY date DESC
-//     OFFSET @Offset ROWS 
-//     FETCH NEXT @PageSize ROWS ONLY
-// )
-// SELECT 
-//     p.*,
-//     dn_detail.id as detail_id,
-//     dn_detail.form_type,
-//     (SELECT TotalCount FROM CountCTE) as TotalCount
-// FROM PaginatedLogs p
-// LEFT JOIN dbo.daily_work_log_detail dn_detail ON p.id = dn_detail.daily_work_log_id
-// ORDER BY p.date DESC, p.id";
-//
-//     using (var connection = new SqlConnection(_connectionString))
-//     {
-//         await connection.OpenAsync();
-//
-//         using (var command = new SqlCommand(query, connection))
-//         {
-//             // Calculate offset
-//             var offset = (pageNumber - 1) * pageSize;
-//
-//             command.Parameters.Add("@Offset", SqlDbType.Int).Value = offset;
-//             command.Parameters.Add("@PageSize", SqlDbType.Int).Value = pageSize;
-//             command.Parameters.Add("@StartDate", SqlDbType.DateTime).Value = (object?)startDate ?? DBNull.Value;
-//             command.Parameters.Add("@EndDate", SqlDbType.DateTime).Value = (object?)endDate ?? DBNull.Value;
-//
-//             var dailyLogsDict = new Dictionary<Guid, AllDailyWorkLogDTO>();
-//             int totalCount = 0;
-//
-//             using (var reader = await command.ExecuteReaderAsync())
-//             {
-//                 while (await reader.ReadAsync())
-//                 {
-//                     totalCount = reader.GetInt32(reader.GetOrdinal("TotalCount"));
-//                     var logId = reader.GetGuid(reader.GetOrdinal("id"));
-//
-//                     if (!dailyLogsDict.TryGetValue(logId, out var dailyLog))
-//                     {
-//                         dailyLog = new AllDailyWorkLogDTO()
-//                         {
-//                             Id = logId,
-//                             EgiName = reader.IsDBNull(reader.GetOrdinal("EGI_Name"))
-//                                 ? string.Empty
-//                                 : reader.GetString(reader.GetOrdinal("EGI_Name")),
-//                             CodeNumber = reader.IsDBNull(reader.GetOrdinal("Code_Number"))
-//                                 ? string.Empty
-//                                 : reader.GetString(reader.GetOrdinal("Code_Number")),
-//                             Date = reader.GetDateTime(reader.GetOrdinal("date")),
-//                             FormId = new List<FormIdDTO>()
-//                         };
-//                         dailyLogsDict.Add(logId, dailyLog);
-//                     }
-//
-//                     if (!reader.IsDBNull(reader.GetOrdinal("detail_id")))
-//                     {
-//                         var formId = new FormIdDTO
-//                         {
-//                             Id = reader.GetGuid(reader.GetOrdinal("detail_id")),
-//                             FormType = reader.IsDBNull(reader.GetOrdinal("form_type"))
-//                                 ? string.Empty
-//                                 : reader.GetString(reader.GetOrdinal("form_type"))
-//                         };
-//                         dailyLog.FormId.Add(formId);
-//                     }
-//                 }
-//             }
-//
-//             return (dailyLogsDict.Values, totalCount);
-//         }
+        public async Task<(IEnumerable<AllDailyWorkLogDTO> Items, Pagination Pagination)> GetPaginatedDailyWorkLogs(int pageNumber, int pageSize, DateTime? startDate = null, 
+            DateTime? endDate = null)
+{
+    // Validate and log input parameters
+    if (pageNumber < 1) pageNumber = 1;
+    if (pageSize < 1) pageSize = 10;
+    
+    // Diagnostic logging
+    _logger.LogInformation($"Pagination Request - Page: {pageNumber}, PageSize: {pageSize}");
 
+    var query = @"
+    WITH CountCTE AS (
+        SELECT COUNT(DISTINCT daily_work_log.id) AS TotalCount
+        FROM daily_work_log
+        JOIN dbo.EGI E ON daily_work_log.egi_id = E.ID
+        JOIN dbo.EGI_Code_Number cn ON daily_work_log.cn_id = cn.ID
+        WHERE 
+            (@StartDate IS NULL OR date >= @StartDate) AND
+            (@EndDate IS NULL OR date <= @EndDate)
+    ),
+    PaginatedLogs AS (
+        SELECT 
+            daily_work_log.id,
+            E.EGI_Name,
+            cn.Code_Number,
+            date,
+            ROW_NUMBER() OVER (ORDER BY date DESC) AS RowNum
+        FROM daily_work_log 
+        JOIN dbo.EGI E ON daily_work_log.egi_id = E.ID
+        JOIN dbo.EGI_Code_Number cn ON daily_work_log.cn_id = cn.ID
+        WHERE 
+            (@StartDate IS NULL OR date >= @StartDate) AND
+            (@EndDate IS NULL OR date <= @EndDate)
+    )
+    SELECT 
+        p.*,
+        dn_detail.id as detail_id,
+        dn_detail.form_type,
+        (SELECT TotalCount FROM CountCTE) as TotalCount
+    FROM PaginatedLogs p
+    LEFT JOIN dbo.daily_work_log_detail dn_detail ON p.id = dn_detail.daily_work_log_id
+    WHERE RowNum BETWEEN @StartRow AND @EndRow
+    ORDER BY p.date DESC, p.id";
 
-        public async Task<(IEnumerable<AllDailyWorkLogDTO> Items, int TotalCount)> GetPaginatedDailyWorkLogs(int pageNumber,int pageSize)
+    using (var connection = new SqlConnection(_connectionString))
+    {
+        await connection.OpenAsync();
+
+        using (var command = new SqlCommand(query, connection))
         {
-            // Input validation
-            if (pageNumber < 1) pageNumber = 1;
-            if (pageSize < 1) pageSize = 10;
+            // Calculate start and end rows
+            var startRow = (pageNumber - 1) * pageSize + 1;
+            var endRow = pageNumber * pageSize;
 
-            var query = @"
-            WITH CountCTE AS (
-                SELECT COUNT(DISTINCT daily_work_log.id) AS TotalCount
-                FROM daily_work_log
-                JOIN dbo.EGI E ON daily_work_log.egi_id = E.ID
-                JOIN dbo.EGI_Code_Number cn ON daily_work_log.cn_id = cn.ID
-            ),
-            PaginatedLogs AS (
-                SELECT 
-                    daily_work_log.id,
-                    E.EGI_Name,
-                    cn.Code_Number,
-                    date
-                FROM daily_work_log 
-                JOIN dbo.EGI E ON daily_work_log.egi_id = E.ID
-                JOIN dbo.EGI_Code_Number cn ON daily_work_log.cn_id = cn.ID
-                ORDER BY date DESC
-                OFFSET @Offset ROWS 
-                FETCH NEXT @PageSize ROWS ONLY
-            )
-            SELECT 
-                p.*,
-                dn_detail.id as detail_id,
-                dn_detail.form_type,
-                (SELECT TotalCount FROM CountCTE) as TotalCount
-            FROM PaginatedLogs p
-            LEFT JOIN dbo.daily_work_log_detail dn_detail ON p.id = dn_detail.daily_work_log_id
-            ORDER BY p.date DESC, p.id";
+            // Add parameters with diagnostic logging
+            command.Parameters.Add("@StartRow", SqlDbType.Int).Value = startRow;
+            command.Parameters.Add("@EndRow", SqlDbType.Int).Value = endRow;
+            command.Parameters.Add("@StartDate", SqlDbType.DateTime).Value = (object)startDate ?? DBNull.Value;
+            command.Parameters.Add("@EndDate", SqlDbType.DateTime).Value = (object)endDate ?? DBNull.Value;
 
-            using (var connection = new SqlConnection(_connectionString))
+            _logger.LogInformation($"SQL Parameters - StartRow: {startRow}, EndRow: {endRow}");
+
+            var dailyLogsDict = new Dictionary<Guid, AllDailyWorkLogDTO>();
+            int totalCount = 0;
+
+            using (var reader = await command.ExecuteReaderAsync())
             {
-                await connection.OpenAsync();
-
-                using (var command = new SqlCommand(query, connection))
+                while (await reader.ReadAsync())
                 {
-                    // Calculate offset
-                    var offset = (pageNumber - 1) * pageSize;
+                    totalCount = reader.GetInt32(reader.GetOrdinal("TotalCount"));
+                    var logId = reader.GetGuid(reader.GetOrdinal("id"));
 
-                    command.Parameters.Add("@Offset", SqlDbType.Int).Value = offset;
-                    command.Parameters.Add("@PageSize", SqlDbType.Int).Value = pageSize;
-
-                    var dailyLogsDict = new Dictionary<Guid, AllDailyWorkLogDTO>();
-                    int totalCount = 0;
-
-                    using (var reader = await command.ExecuteReaderAsync())
+                    if (!dailyLogsDict.TryGetValue(logId, out var dailyLog))
                     {
-                        while (await reader.ReadAsync())
+                        dailyLog = new AllDailyWorkLogDTO()
                         {
-                            totalCount = reader.GetInt32(reader.GetOrdinal("TotalCount"));
-                            var logId = reader.GetGuid(reader.GetOrdinal("id"));
-
-                            if (!dailyLogsDict.TryGetValue(logId, out var dailyLog))
-                            {
-                                dailyLog = new AllDailyWorkLogDTO()
-                                {
-                                    Id = logId,
-                                    EgiName = reader.IsDBNull(reader.GetOrdinal("EGI_Name"))
-                                        ? string.Empty
-                                        : reader.GetString(reader.GetOrdinal("EGI_Name")),
-                                    CodeNumber = reader.IsDBNull(reader.GetOrdinal("Code_Number"))
-                                        ? string.Empty
-                                        : reader.GetString(reader.GetOrdinal("Code_Number")),
-                                    Date = reader.GetDateTime(reader.GetOrdinal("date")),
-                                    // GroupLeader = reader.IsDBNull(reader.GetOrdinal("group_leader"))
-                                    //     ? string.Empty
-                                    //     : reader.GetString(reader.GetOrdinal("group_leader")),
-                                    // Mechanic = reader.IsDBNull(reader.GetOrdinal("mechanic"))
-                                    //     ? string.Empty
-                                    //     : reader.GetString(reader.GetOrdinal("mechanic")),
-                                    FormId = new List<FormIdDTO>()
-                                };
-                                dailyLogsDict.Add(logId, dailyLog);
-                            }
-
-                            if (!reader.IsDBNull(reader.GetOrdinal("detail_id")))
-                            {
-                                var formId = new FormIdDTO
-                                {
-                                    Id = reader.GetGuid(reader.GetOrdinal("detail_id")),
-                                    FormType = reader.IsDBNull(reader.GetOrdinal("form_type"))
-                                        ? string.Empty
-                                        : reader.GetString(reader.GetOrdinal("form_type"))
-                                };
-                                dailyLog.FormId.Add(formId);
-                            }
-                        }
+                            Id = logId,
+                            EgiName = reader.IsDBNull(reader.GetOrdinal("EGI_Name"))
+                                ? string.Empty
+                                : reader.GetString(reader.GetOrdinal("EGI_Name")),
+                            CodeNumber = reader.IsDBNull(reader.GetOrdinal("Code_Number"))
+                                ? string.Empty
+                                : reader.GetString(reader.GetOrdinal("Code_Number")),
+                            Date = reader.GetDateTime(reader.GetOrdinal("date")),
+                            FormId = new List<FormIdDTO>()
+                        };
+                        dailyLogsDict.Add(logId, dailyLog);
                     }
 
-                    return (dailyLogsDict.Values, totalCount);
+                    if (!reader.IsDBNull(reader.GetOrdinal("detail_id")))
+                    {
+                        var formId = new FormIdDTO
+                        {
+                            Id = reader.GetGuid(reader.GetOrdinal("detail_id")),
+                            FormType = reader.IsDBNull(reader.GetOrdinal("form_type"))
+                                ? string.Empty
+                                : reader.GetString(reader.GetOrdinal("form_type"))
+                        };
+                        dailyLog.FormId.Add(formId);
+                    }
                 }
             }
+
+            // Log diagnostic information
+            _logger.LogInformation($"Total Records: {totalCount}, Returned Records: {dailyLogsDict.Count}");
+            
+            
+            // In the method, update the metadata creation:
+            var paginationMetadata = new Pagination()
+            {
+                CurrentPage = pageNumber,   
+                PageSize = pageSize,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                HasPreviousPage = pageNumber > 1,
+                HasNextPage = pageNumber < (int)Math.Ceiling(totalCount / (double)pageSize)
+            };
+            return (dailyLogsDict.Values, paginationMetadata);
         }
+    }
+}
+
+
+        // public async Task<(IEnumerable<AllDailyWorkLogDTO> Items, int TotalCount)> GetPaginatedDailyWorkLogs(int pageNumber,int pageSize)
+        // {
+        //     // Input validation
+        //     if (pageNumber < 1) pageNumber = 1;
+        //     if (pageSize < 1) pageSize = 10;
+        //
+        //     var query = @"
+        //     WITH CountCTE AS (
+        //         SELECT COUNT(DISTINCT daily_work_log.id) AS TotalCount
+        //         FROM daily_work_log
+        //         JOIN dbo.EGI E ON daily_work_log.egi_id = E.ID
+        //         JOIN dbo.EGI_Code_Number cn ON daily_work_log.cn_id = cn.ID
+        //     ),
+        //     PaginatedLogs AS (
+        //         SELECT 
+        //             daily_work_log.id,
+        //             E.EGI_Name,
+        //             cn.Code_Number,
+        //             date
+        //         FROM daily_work_log 
+        //         JOIN dbo.EGI E ON daily_work_log.egi_id = E.ID
+        //         JOIN dbo.EGI_Code_Number cn ON daily_work_log.cn_id = cn.ID
+        //         ORDER BY date DESC
+        //         OFFSET @Offset ROWS 
+        //         FETCH NEXT @PageSize ROWS ONLY
+        //     )
+        //     SELECT 
+        //         p.*,
+        //         dn_detail.id as detail_id,
+        //         dn_detail.form_type,
+        //         (SELECT TotalCount FROM CountCTE) as TotalCount
+        //     FROM PaginatedLogs p
+        //     LEFT JOIN dbo.daily_work_log_detail dn_detail ON p.id = dn_detail.daily_work_log_id
+        //     ORDER BY p.date DESC, p.id";
+        //
+        //     using (var connection = new SqlConnection(_connectionString))
+        //     {
+        //         await connection.OpenAsync();
+        //
+        //         using (var command = new SqlCommand(query, connection))
+        //         {
+        //             // Calculate offset
+        //             var offset = (pageNumber - 1) * pageSize;
+        //
+        //             command.Parameters.Add("@Offset", SqlDbType.Int).Value = offset;
+        //             command.Parameters.Add("@PageSize", SqlDbType.Int).Value = pageSize;
+        //
+        //             var dailyLogsDict = new Dictionary<Guid, AllDailyWorkLogDTO>();
+        //             int totalCount = 0;
+        //
+        //             using (var reader = await command.ExecuteReaderAsync())
+        //             {
+        //                 while (await reader.ReadAsync())
+        //                 {
+        //                     totalCount = reader.GetInt32(reader.GetOrdinal("TotalCount"));
+        //                     var logId = reader.GetGuid(reader.GetOrdinal("id"));
+        //
+        //                     if (!dailyLogsDict.TryGetValue(logId, out var dailyLog))
+        //                     {
+        //                         dailyLog = new AllDailyWorkLogDTO()
+        //                         {
+        //                             Id = logId,
+        //                             EgiName = reader.IsDBNull(reader.GetOrdinal("EGI_Name"))
+        //                                 ? string.Empty
+        //                                 : reader.GetString(reader.GetOrdinal("EGI_Name")),
+        //                             CodeNumber = reader.IsDBNull(reader.GetOrdinal("Code_Number"))
+        //                                 ? string.Empty
+        //                                 : reader.GetString(reader.GetOrdinal("Code_Number")),
+        //                             Date = reader.GetDateTime(reader.GetOrdinal("date")),
+        //                             FormId = new List<FormIdDTO>()
+        //                         };
+        //                         dailyLogsDict.Add(logId, dailyLog);
+        //                     }
+        //
+        //                     if (!reader.IsDBNull(reader.GetOrdinal("detail_id")))
+        //                     {
+        //                         var formId = new FormIdDTO
+        //                         {
+        //                             Id = reader.GetGuid(reader.GetOrdinal("detail_id")),
+        //                             FormType = reader.IsDBNull(reader.GetOrdinal("form_type"))
+        //                                 ? string.Empty
+        //                                 : reader.GetString(reader.GetOrdinal("form_type"))
+        //                         };
+        //                         dailyLog.FormId.Add(formId);
+        //                     }
+        //                 }
+        //             }
+        //
+        //             return (dailyLogsDict.Values, totalCount);
+        //         }
+        //     }
+        // }
 
         public async Task<DailyModel> getDailyDetailById(Guid id)
         {

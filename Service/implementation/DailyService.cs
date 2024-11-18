@@ -134,10 +134,13 @@ namespace worklog_api.Service.implementation
             };
         }
 
-        public async Task<IEnumerable<AllDailyWorkLogDTO>> GetAllDaily(int page, int pageSize)
+        public async Task<(IEnumerable<AllDailyWorkLogDTO>, Pagination pagination)> GetAllDaily(int page, int pageSize, string startDate, string endDate)
         {
-            var paginatedDailyWorkLogs = await _dailyRepository.GetPaginatedDailyWorkLogs(page, pageSize);
-            return paginatedDailyWorkLogs.Items;
+            DateTime?  startDateParse = string.IsNullOrEmpty(startDate) ? null : DateTime.Parse(startDate);
+            DateTime?  endDateParse = string.IsNullOrEmpty(startDate) ? null : DateTime.Parse(startDate);
+            var paginatedDailyWorkLogs = await _dailyRepository.GetPaginatedDailyWorkLogs(page, pageSize,startDateParse, 
+                endDateParse);
+            return (paginatedDailyWorkLogs.Items, paginatedDailyWorkLogs.Pagination);
         }
 
         public async Task<bool> DeleteAllDaily(string id)

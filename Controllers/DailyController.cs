@@ -97,14 +97,15 @@ public class DailyController : ControllerBase
     
     [Route("form-all")]
     [HttpGet]
-    public async Task<IActionResult> GetAllDaily([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    public async Task<IActionResult> GetAllDaily([FromQuery] string startDate = "", string endDate = "", [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        var response =  await _dailyService.GetAllDaily(page, pageSize);
+        var response =  await _dailyService.GetAllDaily(page, pageSize, startDate, endDate);
         return Ok(new ApiResponse<IEnumerable<AllDailyWorkLogDTO>>()
         {
             StatusCode = 200,
             Message = "success get daily",
-            Data = response
+            Data = response.Item1,
+            Pagination = response.pagination
         });
     }
     
