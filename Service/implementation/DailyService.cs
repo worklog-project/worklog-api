@@ -130,5 +130,27 @@ namespace worklog_api.Service.implementation
             var paginatedDailyWorkLogs = await _dailyRepository.GetPaginatedDailyWorkLogs(page, pageSize);
             return paginatedDailyWorkLogs.Items;
         }
+
+        public async Task<bool> DeleteAllDaily(string id)
+        {
+            var guid = Guid.Parse(id);
+            var deleteAllDailyWorkLogs = await _dailyRepository.DeleteAllDailyWorkLogs(guid);
+            if (!deleteAllDailyWorkLogs)
+            {
+                throw new NotFoundException("Given Id not found");
+            }
+            return deleteAllDailyWorkLogs;
+        }
+
+        public async Task<bool> DeleteFormDaily(string id)
+        {
+            var guid = Guid.Parse(id);
+            var deleteFormDaily = await _dailyRepository.DeleteFormDaily(guid);
+            if (!deleteFormDaily)
+            {
+                throw new NotFoundException("Given Id not found");
+            }
+            return deleteFormDaily;
+        }
     }
 }
