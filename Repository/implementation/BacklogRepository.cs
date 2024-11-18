@@ -264,5 +264,41 @@ namespace worklog_api.Repository.implementation
             }
         }
 
+        public async Task<bool> DeleteBacklogAsync(Guid backlogId)
+        {
+            //delete on daily_work_log_image first
+            var deleteImageQuery = @"DELETE FROM daily_work_log_backlog_image WHERE backlog_id = @backlogId";
+            //delete on daily_work_log_backlog
+            var deleteQuery = @"DELETE FROM daily_work_log_backlog WHERE ID = @backlogId";
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        var deleteImageCommand = new SqlCommand(deleteImageQuery, connection, transaction);
+                        deleteImageCommand.Parameters.AddWithValue("@backlogId", backlogId);
+                        await deleteImageCommand.ExecuteNonQueryAsync();
+
+                        var deleteCommand = new SqlCommand(deleteQuery, connection, transaction);
+                        deleteCommand.Parameters.AddWithValue("@backlogId", backlogId);
+                        var rowsAffected = await deleteCommand.ExecuteNonQueryAsync();
+
+                        await transaction.CommitAsync();
+                        return rowsAffected > 0;
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogWarning(e.Message);
+                        await transaction.RollbackAsync();
+                        throw;
+                    }
+                }
+
+            }
+
+        }
     }
 }

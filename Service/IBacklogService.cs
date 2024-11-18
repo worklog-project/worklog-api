@@ -9,5 +9,6 @@ namespace worklog_api.Service
     {
         Task<Guid> InsertBacklogAsync(BacklogDTO backlogDTO, BacklogImageDTO imageDTO);
         Task<BacklogModel> GetByIDAsync(Guid backlogID);
+        Task<bool> DeleteBacklogAsync(Guid backlogID);
     }
 }

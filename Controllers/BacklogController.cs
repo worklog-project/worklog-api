@@ -75,5 +75,24 @@ namespace worklog_api.Controllers
 
             return Ok(response);
         }
+
+        [Route("delete-backlog")]
+        [HttpDelete]
+        public async Task<IActionResult> DeleteBacklog([FromQuery] Guid backlogId)
+        {
+            var result = await _backlogService.DeleteBacklogAsync(backlogId);
+
+            if (!result)
+                return NotFound("Backlog not found");
+
+            var response = new ApiResponse<object>
+            {
+                StatusCode = 200,
+                Message = "Success delete Backlog",
+                Data = null
+            };
+
+            return Ok(response);
+        }
     }
 }
