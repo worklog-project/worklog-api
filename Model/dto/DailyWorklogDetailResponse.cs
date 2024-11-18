@@ -19,6 +19,14 @@ public class DailyWorklogDetailResponse
     [JsonPropertyName("typeSheet")]
     public string _formType {get; set;}
     
+    [JsonPropertyName("tanggal")]
+    public string _date {get; set;}
+
+    
+    [JsonPropertyName("cnId")]
+    public string _cnid {get; set;}
+
+    
     [JsonPropertyName("groupLeader")]
     public string _groupLeader {get; set;}
     

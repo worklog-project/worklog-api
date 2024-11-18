@@ -446,7 +446,8 @@ ORDER BY p.date DESC, p.id";
         public async Task<DailyModel> getDailyDetailById(Guid id)
         {
             DailyModel dailyModel = null;
-            var query = @"SELECT * FROM daily_work_log_detail WHERE id = @id";
+            var query = @"SELECT * FROM daily_work_log_detail 
+JOIN dbo.daily_work_log dwl on dwl.id = daily_work_log_detail.daily_work_log_id WHERE daily_work_log_detail.id = @id";
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
@@ -470,6 +471,8 @@ ORDER BY p.date DESC, p.id";
                             _dailyId = reader.GetGuid(reader.GetOrdinal("daily_work_log_id")),
                             _groupLeader = reader.GetString(reader.GetOrdinal("group_leader")),
                             _mechanic = reader.GetString(reader.GetOrdinal("mechanic")),
+                            _date = reader.GetDateTime(reader.GetOrdinal("date")),
+                            _cnId = reader.GetGuid(reader.GetOrdinal("cn_id")),
                         };
                     }
                 }
