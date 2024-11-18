@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using worklog_api.error;
+using worklog_api.helper;
 using worklog_api.Model;
 using worklog_api.Model.dto;
 using worklog_api.Model.form;
@@ -31,15 +32,40 @@ namespace worklog_api.Service.implementation
 
         public async Task<string> InsertDaily(DailyRequest dailyRequest)
         {
-            var dailyByEgiAndCodeNumberAndDate =  
-                await _dailyRepository.getDailyByEgiAndCodeNumberAndDate(dailyRequest._egiId, dailyRequest._cnId, dailyRequest._date);
+            var egiNameById = await _dailyRepository.GetEgiNameByID(dailyRequest._egiId);
 
+            var scheduleDetailById = await _dailyRepository.GetScheduleDetailById(dailyRequest._date);
+            
+            var dailyByEgiAndCodeNumberAndDate =  
+                await _dailyRepository.getDailyByEgiAndCodeNumberAndDate(dailyRequest._egiId, dailyRequest._cnId, scheduleDetailById.PlannedDate.ToString("yyyy-MM-dd"));
+
+
+
+            if (scheduleDetailById == null)
+            {
+                throw new NotFoundException("Given Schedule Not Found");
+            }else if (scheduleDetailById.IsDone == true)
+            {
+                throw new BadRequestException("Daily for Given Schedule Has Done");
+            }
+            
+            int count = 0;
+
+            if (egiNameById.Substring(0, 2) == "HD")
+            {
+                count = 4;
+            }
+            else
+            {
+                count = 3;
+            }
+            
 
             var generateId = Guid.NewGuid();
             DailyModel dailyModel = new DailyModel()
             {
                 _id = generateId,
-                _date = DateTime.Parse(dailyRequest._date),
+                _date = scheduleDetailById.PlannedDate,
                 _cnId = Guid.Parse(dailyRequest._cnId),
                 _count = 0,
                 _egiId = Guid.Parse(dailyRequest._egiId),
@@ -55,20 +81,22 @@ namespace worklog_api.Service.implementation
             
             if (dailyByEgiAndCodeNumberAndDate == null)
             {
-                var insertDaily = await _dailyRepository.insertDaily(dailyModel);
+                var dailyDetailGeneratedId = Guid.NewGuid();
+                var insertDaily = await _dailyRepository.insertDaily(dailyModel, scheduleDetailById.ID);
                 dailyModel._dailyId = insertDaily;
                 var dailyDetail =
-                    await _dailyRepository.insertDailyDetail(dailyModel, generateId);
+                    await _dailyRepository.insertDailyDetail(dailyModel, dailyDetailGeneratedId, scheduleDetailById.ID, count);
                 return dailyDetail.ToString();
             } else
             {
-                if (dailyByEgiAndCodeNumberAndDate._count > 3)
+                if (dailyByEgiAndCodeNumberAndDate._count >= count)
                 {
                     throw new BadRequestException("Daily already has been filled");
                 }
                 
                 dailyRequest._dailyId = dailyByEgiAndCodeNumberAndDate._id;
-                var dailyDetail = await _dailyRepository.insertDailyDetail(dailyModel, generateId);
+                var dailyDetailGeneratedId = Guid.NewGuid();
+                var dailyDetail = await _dailyRepository.insertDailyDetail(dailyModel, dailyDetailGeneratedId, scheduleDetailById.ID, count);
                 return dailyDetail.ToString();
             }
         }
@@ -77,6 +105,10 @@ namespace worklog_api.Service.implementation
         {
             var guid = Guid.Parse(id);
             var dailyDetailById = await _dailyRepository.getDailyDetailById(guid);
+            if (dailyDetailById == null)
+            {
+                throw new NotFoundException("Daily Detail with given Id not found");
+            }
             return new DailyWorklogDetailResponse()
             {
                 _id = dailyDetailById._id.ToString(),
