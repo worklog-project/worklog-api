@@ -13,10 +13,12 @@ namespace worklog_api.Service.implementation
     public class DailyService : IDailyService
     {
         private readonly IDailyRepository _dailyRepository;
+        private readonly IBacklogRepository _backlogRepository;
 
-        public DailyService(IDailyRepository dailyRepository)
+        public DailyService(IDailyRepository dailyRepository, IBacklogRepository backlogRepository)
         {
             _dailyRepository = dailyRepository;
+            _backlogRepository = backlogRepository;
         }
 
         public async Task<IEnumerable<EGIModel>> GetEGI(string egi)
@@ -105,10 +107,15 @@ namespace worklog_api.Service.implementation
         {
             var guid = Guid.Parse(id);
             var dailyDetailById = await _dailyRepository.getDailyDetailById(guid);
+            
+
             if (dailyDetailById == null)
             {
                 throw new NotFoundException("Daily Detail with given Id not found");
             }
+
+            var backlogs = await _backlogRepository.GetByDailyDetailIDAsync(guid);
+
             return new DailyWorklogDetailResponse()
             {
                 _id = dailyDetailById._id.ToString(),
@@ -119,11 +126,11 @@ namespace worklog_api.Service.implementation
                 _formType = dailyDetailById._formType,
                 _groupLeader = dailyDetailById._groupLeader,
                 _mechanic = dailyDetailById._mechanic,
+                _backlogs = backlogs,
                 _date = dailyDetailById._date.Date.ToString("yyyy-MM-dd"),
                 _cnid = dailyDetailById._cnId.ToString(),
                 _cnName = dailyDetailById._cnName,
                 _egiName = dailyDetailById._egiName
-                
             };
         }
 

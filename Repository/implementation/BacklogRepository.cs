@@ -1,5 +1,6 @@
 ﻿using System.Data.SqlClient;
 using worklog_api.Model;
+using worklog_api.error;
 
 namespace worklog_api.Repository.implementation
 {
@@ -77,7 +78,7 @@ namespace worklog_api.Repository.implementation
                     {
                         _logger.LogWarning(e.Message);
                         await transaction.RollbackAsync();
-                        throw;
+                        throw new InternalServerError("Error Insert data");
                     }
                 }
             }
@@ -175,7 +176,7 @@ namespace worklog_api.Repository.implementation
         }
 
 
-        public async Task<List<BacklogModel>> GetByDailyIDAsync(Guid dailyDetailId)
+        public async Task<List<BacklogModel>> GetByDailyDetailIDAsync(Guid dailyDetailId)
         {
             var query = @"
             SELECT 
@@ -293,7 +294,7 @@ namespace worklog_api.Repository.implementation
                     {
                         _logger.LogWarning(e.Message);
                         await transaction.RollbackAsync();
-                        throw;
+                        throw new InternalServerError("error while delete backlog");
                     }
                 }
 
