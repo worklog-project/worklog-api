@@ -17,6 +17,9 @@ public class DailyModel
     public TimeSpan _endTime { get; set; }
 
     public string _formType { get; set; }
+    
+    public string _cnName { get; set; }
+    public string _egiName { get; set; }
 
     public int _count { get; set; }
     public string _groupLeader { get; set; }

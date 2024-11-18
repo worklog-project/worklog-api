@@ -22,6 +22,12 @@ public class DailyWorklogDetailResponse
     [JsonPropertyName("tanggal")]
     public string _date {get; set;}
 
+    [JsonPropertyName("cnName")]
+    public string _cnName {get; set;}
+
+    [JsonPropertyName("egiName")]
+    public string _egiName {get; set;}
+
     
     [JsonPropertyName("cnId")]
     public string _cnid {get; set;}

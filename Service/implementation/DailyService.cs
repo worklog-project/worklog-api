@@ -121,6 +121,8 @@ namespace worklog_api.Service.implementation
                 _mechanic = dailyDetailById._mechanic,
                 _date = dailyDetailById._date.Date.ToString("yyyy-MM-dd"),
                 _cnid = dailyDetailById._cnId.ToString(),
+                _cnName = dailyDetailById._cnName,
+                _egiName = dailyDetailById._egiName
                 
             };
         }

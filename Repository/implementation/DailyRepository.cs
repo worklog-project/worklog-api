@@ -447,7 +447,10 @@ ORDER BY p.date DESC, p.id";
         {
             DailyModel dailyModel = null;
             var query = @"SELECT * FROM daily_work_log_detail 
-JOIN dbo.daily_work_log dwl on dwl.id = daily_work_log_detail.daily_work_log_id WHERE daily_work_log_detail.id = @id";
+JOIN dbo.daily_work_log dwl on dwl.id = daily_work_log_detail.daily_work_log_id 
+JOIN dbo.EGI e on e.ID = dwl.egi_id
+JOIN dbo.EGI_Code_Number ecn on ecn.ID = dwl.cn_id 
+WHERE daily_work_log_detail.id = @id";
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
@@ -473,6 +476,8 @@ JOIN dbo.daily_work_log dwl on dwl.id = daily_work_log_detail.daily_work_log_id 
                             _mechanic = reader.GetString(reader.GetOrdinal("mechanic")),
                             _date = reader.GetDateTime(reader.GetOrdinal("date")),
                             _cnId = reader.GetGuid(reader.GetOrdinal("cn_id")),
+                            _cnName = reader.GetString(reader.GetOrdinal("Code_Number")),
+                            _egiName = reader.GetString(reader.GetOrdinal("EGI_Name")),
                         };
                     }
                 }
