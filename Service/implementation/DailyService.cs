@@ -126,7 +126,11 @@ namespace worklog_api.Service.implementation
                 _formType = dailyDetailById._formType,
                 _groupLeader = dailyDetailById._groupLeader,
                 _mechanic = dailyDetailById._mechanic,
-                _backlogs = backlogs
+                _backlogs = backlogs,
+                _date = dailyDetailById._date.Date.ToString("yyyy-MM-dd"),
+                _cnid = dailyDetailById._cnId.ToString(),
+                _cnName = dailyDetailById._cnName,
+                _egiName = dailyDetailById._egiName
             };
         }
 
@@ -134,6 +138,28 @@ namespace worklog_api.Service.implementation
         {
             var paginatedDailyWorkLogs = await _dailyRepository.GetPaginatedDailyWorkLogs(page, pageSize);
             return paginatedDailyWorkLogs.Items;
+        }
+
+        public async Task<bool> DeleteAllDaily(string id)
+        {
+            var guid = Guid.Parse(id);
+            var deleteAllDailyWorkLogs = await _dailyRepository.DeleteAllDailyWorkLogs(guid);
+            if (!deleteAllDailyWorkLogs)
+            {
+                throw new NotFoundException("Given Id not found");
+            }
+            return deleteAllDailyWorkLogs;
+        }
+
+        public async Task<bool> DeleteFormDaily(string id)
+        {
+            var guid = Guid.Parse(id);
+            var deleteFormDaily = await _dailyRepository.DeleteFormDaily(guid);
+            if (!deleteFormDaily)
+            {
+                throw new NotFoundException("Given Id not found");
+            }
+            return deleteFormDaily;
         }
     }
 }

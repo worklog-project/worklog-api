@@ -120,5 +120,31 @@ public class DailyController : ControllerBase
             Data = response
         });
     }
+    [Route("form")]
+    [HttpDelete]
+    public async Task<IActionResult> DeleteAllDaily([FromQuery] string id)
+    {
+        var response =  await _dailyService.DeleteAllDaily(id);
+        return Ok(new ApiResponse<bool>()
+        {
+            StatusCode = 200,
+            Message = "success get daily detail",
+            Data = response
+        });
+    }
+    [Route("form-detail")]
+    [HttpDelete]
+    public async Task<IActionResult> DeleteFormDaily([FromQuery] string id)
+    {
+        var response =  await _dailyService.DeleteFormDaily(id);
+        return Ok(new ApiResponse<bool>()
+        {
+            StatusCode = 200,
+            Message = "success get daily detail",
+            Data = response
+        });
+    }
+    
+    
     
 }
