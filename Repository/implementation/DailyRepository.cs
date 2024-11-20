@@ -465,7 +465,11 @@ VALUES (@Id, @date, @cn_id, @egi_id, @count)";
         public async Task<DailyModel> getDailyDetailById(Guid id)
         {
             DailyModel dailyModel = null;
-            var query = @"SELECT * FROM daily_work_log_detail WHERE id = @id";
+            var query = @"SELECT * FROM daily_work_log_detail 
+JOIN dbo.daily_work_log dwl on dwl.id = daily_work_log_detail.daily_work_log_id 
+JOIN dbo.EGI e on e.ID = dwl.egi_id
+JOIN dbo.EGI_Code_Number ecn on ecn.ID = dwl.cn_id 
+WHERE daily_work_log_detail.id = @id";
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
@@ -489,6 +493,10 @@ VALUES (@Id, @date, @cn_id, @egi_id, @count)";
                             _dailyId = reader.GetGuid(reader.GetOrdinal("daily_work_log_id")),
                             _groupLeader = reader.GetString(reader.GetOrdinal("group_leader")),
                             _mechanic = reader.GetString(reader.GetOrdinal("mechanic")),
+                            _date = reader.GetDateTime(reader.GetOrdinal("date")),
+                            _cnId = reader.GetGuid(reader.GetOrdinal("cn_id")),
+                            _cnName = reader.GetString(reader.GetOrdinal("Code_Number")),
+                            _egiName = reader.GetString(reader.GetOrdinal("EGI_Name")),
                         };
                     }
                 }
@@ -546,6 +554,40 @@ VALUES (@Id, @date, @cn_id, @egi_id, @count)";
             }
 
             return scheduleDetail;
+        }
+
+        public async Task<bool> DeleteAllDailyWorkLogs(Guid scheduleId)
+        {
+            var query = @"DELETE FROM daily_work_log WHERE id = @id";
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                var sqlCommand = new SqlCommand(query, connection);
+                sqlCommand.Parameters.AddWithValue("@id", scheduleId);
+
+                var executeNonQueryAsync = await sqlCommand.ExecuteNonQueryAsync();
+
+                return executeNonQueryAsync > 0;
+            }
+        }
+
+        public async Task<bool> DeleteFormDaily(Guid scheduleId)
+        {
+            var query = @"DELETE FROM daily_work_log_detail WHERE id = @id";
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                var sqlCommand = new SqlCommand(query, connection);
+                sqlCommand.Parameters.AddWithValue("@id", scheduleId);
+
+                var executeNonQueryAsync = await sqlCommand.ExecuteNonQueryAsync();
+
+                return executeNonQueryAsync > 0;
+            }
         }
     }
 }

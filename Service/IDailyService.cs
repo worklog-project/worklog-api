@@ -14,5 +14,8 @@ namespace worklog_api.Service
         Task<string> InsertDaily(DailyRequest dailyRequest);
         Task<DailyWorklogDetailResponse> GetDailyDetailByID(string id);
         Task<IEnumerable<AllDailyWorkLogDTO>> GetAllDaily(int page, int pageSize);
+
+        Task<bool> DeleteAllDaily(string id);
+        Task<bool> DeleteFormDaily(string id);
     }
 }
