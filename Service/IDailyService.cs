@@ -1,4 +1,5 @@
-﻿using worklog_api.Model;
+﻿using worklog_api.helper;
+using worklog_api.Model;
 using worklog_api.Model.dto;
 using worklog_api.Model.form;
 using worklog_api.Repository.implementation;
@@ -13,8 +14,7 @@ namespace worklog_api.Service
 
         Task<string> InsertDaily(DailyRequest dailyRequest);
         Task<DailyWorklogDetailResponse> GetDailyDetailByID(string id);
-        Task<IEnumerable<AllDailyWorkLogDTO>> GetAllDaily(int page, int pageSize);
-
+        Task<(IEnumerable<AllDailyWorkLogDTO>, Pagination pagination)> GetAllDaily(int page, int pageSize, string startDate, string endDate);
         Task<bool> DeleteAllDaily(string id);
         Task<bool> DeleteFormDaily(string id);
     }
