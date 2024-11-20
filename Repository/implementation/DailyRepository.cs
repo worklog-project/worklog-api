@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using worklog_api.error;
 using worklog_api.Model;
 using worklog_api.Model.dto;
 using JsonSerializer = System.Text.Json.JsonSerializer;
@@ -182,9 +183,14 @@ VALUES (@Id, @date, @cn_id, @egi_id, @count)";
             SET count = count + 1 OUTPUT INSERTED.count
             WHERE id = @id";
             
-            
             // update Daily
             var updatedScheduleDetail = @"UPDATE Schedule_Detail SET Is_Done = 1 WHERE id = @id";
+
+            // validation if daily already exist
+            var checkDailyDetail = @"SELECT COUNT_BIG(*) 
+            FROM daily_work_log_detail 
+            WHERE daily_work_log_id = @daily_work_log_id 
+            AND form_type = @form_type";
 
 
             using (var connection = new SqlConnection(_connectionString))
@@ -196,6 +202,21 @@ VALUES (@Id, @date, @cn_id, @egi_id, @count)";
                 {
                     try
                     {
+                        // Check for existing record
+                        var checkCommand = new SqlCommand(checkDailyDetail, connection, transaction);
+                        checkCommand.Parameters.AddWithValue("@daily_work_log_id", dailyModel._dailyId);
+                        checkCommand.Parameters.AddWithValue("@form_type", dailyModel._formType ?? (object)DBNull.Value);
+
+                        // Use ExecuteScalarAsync and convert to long since COUNT_BIG returns bigint
+                        var result = await checkCommand.ExecuteScalarAsync();
+                        long existingRecords = result != null ? Convert.ToInt64(result) : 0;
+
+                        if (existingRecords > 0)
+                        {
+                            _logger.LogWarning($"Failed to create new daily, daily already exist");
+                            throw new BadRequestException($"A record already exists for daily_work_log_id: {dailyModel._dailyId} and form_type: {dailyModel._formType}");
+                        }
+
                         // Serialize the dictionaries to JSON
                         var detailSheetJson = JsonSerializer.Serialize(dailyModel._sheetDetail);
 
