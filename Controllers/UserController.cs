@@ -61,7 +61,7 @@ public class UserController : ControllerBase
 
         return Ok(new ApiResponse<IEnumerable<GroupLeaderDTO>>(
             StatusCodes.Status200OK,
-            "login success",
+            "get all group-leader success",
             allGroupLeaders));
     }
     
