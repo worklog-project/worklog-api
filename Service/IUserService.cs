@@ -6,4 +6,5 @@ public interface IUserService
 {
     Task<LoginResponse> Login(LoginRequest loginRequest);
     Task<LoginResponse> RefreshToken(RefreshTokenRequest refreshTokenRequest);
+    Task<IEnumerable<GroupLeaderDTO>> getAllGroupLeaders();
 }
