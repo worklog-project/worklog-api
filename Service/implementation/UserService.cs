@@ -53,6 +53,8 @@ public class UserService : IUserService
         return loginResponse;
     }
 
+    
+
     public async Task<LoginResponse> RefreshToken(RefreshTokenRequest refreshTokenRequest)
     {
         
@@ -128,6 +130,64 @@ public class UserService : IUserService
             throw new AuthorizationException("Refresh Token failed");
         }
     }
+
+    public async Task<IEnumerable<GroupLeaderDTO>> getAllGroupLeaders()
+    {
+
+        try
+        {
+            var groupLeaders = new List<GroupLeaderDTO>();
+            using (var conn = new LdapConnection())
+            {
+                
+                conn.Connect(ldapHost, ldapPort);   
+                
+                conn.Bind(adUsername+"@kpp.com", adPassword);
+
+                LdapSearchConstraints connSearchConstraints = conn.SearchConstraints;
+                connSearchConstraints.ReferralFollowing = true;
+                conn.Constraints = connSearchConstraints;
+                
+                string searchFilter = "(&(objectClass=user)(memberOf=CN=Group Leader,CN=Users,DC=kpp,DC=com))";
+
+                
+                string specificBaseDN = "DC=kpp,DC=com"; 
+                
+                string[] attributes = { "sAMAccountName", "cn"}; // Add attributes you want to retrieve
+                var results = conn.Search(
+                    baseDN,
+                    LdapConnection.SCOPE_SUB,
+                    searchFilter,
+                    attributes,
+                    false
+                );
+                while (results.HasMore())
+                {
+                    var entry = results.Next();
+                
+                    // Safely get sAMAccountName and cn attributes
+                    var username = entry.getAttribute("sAMAccountName")?.StringValue;
+                    var commonName = entry.getAttribute("cn")?.StringValue;
+                
+                    if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(commonName))
+                    {
+                        Console.WriteLine(commonName);
+                        groupLeaders.Add(new GroupLeaderDTO
+                        {
+                            name = commonName
+                        });
+                    }
+                }
+            }
+            return groupLeaders;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"Get all group leaders failed: {e.Message}");
+            throw new InternalServerError("Get all group leaders failed");
+        }
+    }
+
 
     public string AuthenticateUser(string username, string password)
     {

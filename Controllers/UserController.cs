@@ -53,5 +53,16 @@ public class UserController : ControllerBase
             "login success",
            $"test endpoint for group leader, User: {user.username}, Role: {user.role}"));
     }
+
+    [HttpGet("group-leader")]
+    public async Task<IActionResult> getGroupLeader()
+    {
+        var allGroupLeaders = await _userService.getAllGroupLeaders();
+
+        return Ok(new ApiResponse<IEnumerable<GroupLeaderDTO>>(
+            StatusCodes.Status200OK,
+            "login success",
+            allGroupLeaders));
+    }
     
 }
