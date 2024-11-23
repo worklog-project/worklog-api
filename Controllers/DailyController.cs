@@ -145,7 +145,30 @@ public class DailyController : ControllerBase
             Data = response
         });
     }
-    
-    
-    
+
+
+    [Route("form-detail-html")]
+    [HttpGet]
+    public async Task<IActionResult> GetDailyDetailHTML([FromQuery] string id)
+    {
+        var response = await _dailyService.GetDailyDetailByID(id);
+
+        // Check if htmlForm is not empty or null
+        if (!string.IsNullOrEmpty(response._htmlForm))
+        {
+            // Return the HTML content with content type 'text/html'
+            return Content(response._htmlForm, "text/html");
+        }
+
+        // If the HTML form was not generated, return the standard response
+        return Ok(new ApiResponse<DailyWorklogDetailResponse>()
+        {
+            StatusCode = 200,
+            Message = "success get daily detail",
+            Data = response
+        });
+    }
+
+
+
 }
