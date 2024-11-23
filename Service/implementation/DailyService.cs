@@ -108,11 +108,21 @@ namespace worklog_api.Service.implementation
         {
             var guid = Guid.Parse(id);
             var dailyDetailById = await _dailyRepository.getDailyDetailById(guid);
+            string htmlForm = string.Empty;
             
 
             if (dailyDetailById == null)
             {
                 throw new NotFoundException("Daily Detail with given Id not found");
+            }
+
+            if (dailyDetailById._egiName.Contains("PC"))
+            {
+                htmlForm = await FormToPDF.ExcavatorFormToPDF(dailyDetailById);
+            } 
+            else if (dailyDetailById._egiName.Contains("HD785"))
+            {
+                htmlForm = await FormToPDF.HD785FormToPDF(dailyDetailById);
             }
 
             var backlogs = await _backlogRepository.GetByDailyDetailIDAsync(guid);
@@ -131,7 +141,8 @@ namespace worklog_api.Service.implementation
                 _date = dailyDetailById._date.Date.ToString("yyyy-MM-dd"),
                 _cnid = dailyDetailById._cnId.ToString(),
                 _cnName = dailyDetailById._cnName,
-                _egiName = dailyDetailById._egiName
+                _egiName = dailyDetailById._egiName,
+                _htmlForm = htmlForm
             };
         }
 

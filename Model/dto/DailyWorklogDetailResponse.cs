@@ -45,5 +45,8 @@ public class DailyWorklogDetailResponse
     [JsonPropertyName("detailSheet")]
     [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public virtual Dictionary<string, object> _sheetDetail { get; set; }
-    
+
+    [JsonPropertyName("htmlForm")]
+    public string _htmlForm { get; set; }
+
 }
