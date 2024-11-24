@@ -8,7 +8,7 @@ public class DailyWorklogDetailResponse
     public string _id {get; set;}
     
     [JsonPropertyName("hourMeter")]
-    public int _hourmeter {get; set;}
+    public double _hourmeter {get; set;}
     
     [JsonPropertyName("startTime")]
     public TimeSpan _startTime {get; set;}
