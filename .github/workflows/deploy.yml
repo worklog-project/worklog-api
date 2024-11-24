@@ -1,0 +1,58 @@
+name: CI/CD Pipeline for .NET API
+
+on:
+  push:
+    branches:
+      - production
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the repository
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    # Set up .NET Core
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 8.0 # Specify your .NET version
+
+    # Build and Publish the .NET Application
+    - name: Build .NET Application
+      run: |
+        dotnet restore
+        dotnet publish -c Release -o publish
+
+    # Build the Docker image
+    - name: Build Docker Image
+      run: |
+        docker build -t worklog-api:latest .
+
+    # Push Docker image to VPS
+    - name: Deploy to VPS
+      env:
+        VPS_IP: ${{ secrets.VPS_IP }}
+        VPS_USER: ${{ secrets.VPS_USER }}
+        VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      run: |
+        echo "$VPS_SSH_KEY" > private_key
+        chmod 600 private_key
+
+        # Copy docker-compose or app files to VPS
+        scp -i private_key -o StrictHostKeyChecking=no \
+          docker-compose.yml $VPS_USER@$VPS_IP:/home/$VPS_USER/
+
+        # SSH into the VPS and deploy
+        ssh -i private_key -o StrictHostKeyChecking=no $VPS_USER@$VPS_IP << EOF
+          docker stop worklog-api || true
+          docker rm worklog-api || true
+          docker rmi worklog-api:latest || true
+
+          # Pull the latest version and start the container
+          cd /home/$VPS_USER
+          docker-compose up -d --build
+        EOF
+      shell: bash
