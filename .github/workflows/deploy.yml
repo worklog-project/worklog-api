@@ -52,7 +52,7 @@ jobs:
           docker rmi worklog-api:latest || true
 
           # Pull the latest version and start the container
-          cd /home/$VPS_USER
+          cd /home/$VPS_USER/worklog-api
           docker-compose up -d --build
         EOF
       shell: bash
