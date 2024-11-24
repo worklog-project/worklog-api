@@ -10,7 +10,7 @@ public class DailyModel
     public Guid _cnId { get; set; }
     public DateTime _date { get; set; }
 
-    public int _hourmeter { get; set; }
+    public double _hourmeter { get; set; }
 
     public TimeSpan _startTime { get; set; }
 
@@ -32,7 +32,7 @@ public class DailyModel
     {
     }
 
-    public DailyModel(Guid id, Guid egiId, Guid cnId, DateTime date, int count, string groupLeader, string mechanic, Dictionary<string, object> document, int hourMeter, TimeSpan startTime, TimeSpan endTime, string formType)
+    public DailyModel(Guid id, Guid egiId, Guid cnId, DateTime date, int count, string groupLeader, string mechanic, Dictionary<string, object> document, float hourMeter, TimeSpan startTime, TimeSpan endTime, string formType)
     {
         _id = id;
         _egiId = egiId;

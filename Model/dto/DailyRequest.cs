@@ -20,7 +20,7 @@ public class DailyRequest
     
     [JsonPropertyName("hourMeter")]
     [JsonPropertyOrder(4)]
-    public int _hourmeter {get; set;}
+    public double _hourmeter {get; set;}
     
     [JsonPropertyName("startTime")]
     [JsonPropertyOrder(5)]

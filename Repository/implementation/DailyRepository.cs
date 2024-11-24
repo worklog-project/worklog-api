@@ -504,7 +504,7 @@ WHERE daily_work_log_detail.id = @id";
                         {
                             _id = reader.GetGuid(reader.GetOrdinal("id")),
                             _sheetDetail = JsonSerializer.Deserialize<Dictionary<string, object>>(reader.GetString(reader.GetOrdinal("additional_info"))),
-                            _hourmeter = reader.GetInt32(reader.GetOrdinal("hour_meter")),
+                            _hourmeter = reader.GetDouble(reader.GetOrdinal("hour_meter")),
                             _startTime = reader.GetTimeSpan(reader.GetOrdinal("start_time")),
                             _endTime = reader.GetTimeSpan(reader.GetOrdinal("finish_time")),
                             _formType = reader.GetString(reader.GetOrdinal("form_type")),
