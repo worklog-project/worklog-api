@@ -31,7 +31,7 @@ jobs:
       run: |
         docker build -t worklog-api:latest .
 
-    # Push Docker image to VPS
+    # Deploy to VPS
     - name: Deploy to VPS
       env:
         VPS_IP: ${{ secrets.VPS_IP }}
@@ -47,6 +47,16 @@ jobs:
 
         # SSH into the VPS and deploy
         ssh -i private_key -o StrictHostKeyChecking=no $VPS_USER@$VPS_IP << EOF
+          # Ensure the Docker service is running and the user has permissions
+          sudo systemctl start docker
+
+          # Make sure the user can interact with Docker without sudo
+          sudo usermod -aG docker $VPS_USER
+
+          # Ensure the Docker socket has the correct permissions
+          sudo chmod 666 /var/run/docker.sock
+
+          # Stop and remove the existing container, if any
           docker stop worklog-api || true
           docker rm worklog-api || true
           docker rmi worklog-api:latest || true
