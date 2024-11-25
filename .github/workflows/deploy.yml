@@ -38,31 +38,40 @@ jobs:
         VPS_USER: ${{ secrets.VPS_USER }}
         VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
       run: |
+        # Save the private SSH key
         echo "$VPS_SSH_KEY" > private_key
         chmod 600 private_key
 
-        # Copy docker-compose or app files to VPS
+        # Ensure the directory exists on the VPS
+        ssh -i private_key -o StrictHostKeyChecking=no $VPS_USER@$VPS_IP "mkdir -p /home/$VPS_USER/worklog-api"
+
+        # Transfer files to the VPS
         scp -i private_key -o StrictHostKeyChecking=no \
-          docker-compose.yml $VPS_USER@$VPS_IP:/home/$VPS_USER/
+          docker-compose.yml $VPS_USER@$VPS_IP:/home/$VPS_USER/worklog-api/
 
         # SSH into the VPS and deploy
         ssh -i private_key -o StrictHostKeyChecking=no $VPS_USER@$VPS_IP << EOF
-          # Ensure the Docker service is running and the user has permissions
+          # Ensure Docker is running
           sudo systemctl start docker
 
-          # Make sure the user can interact with Docker without sudo
-          sudo usermod -aG docker $VPS_USER
+          # Ensure Docker Compose is installed
+          if ! command -v docker-compose &> /dev/null; then
+            sudo apt update
+            sudo apt install -y docker-compose-plugin
+          fi
 
-          # Ensure the Docker socket has the correct permissions
-          sudo chmod 666 /var/run/docker.sock
-
-          # Stop and remove the existing container, if any
+          # Stop and remove the existing container if it exists
           docker stop worklog-api || true
           docker rm worklog-api || true
           docker rmi worklog-api:latest || true
 
-          # Pull the latest version and start the container
+          # Navigate to the application directory
           cd /home/$VPS_USER/worklog-api
+
+          # Start the container
           docker-compose up -d --build
         EOF
+
+        # Clean up the SSH key
+        rm -f private_key
       shell: bash
