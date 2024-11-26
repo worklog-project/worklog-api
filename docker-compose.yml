@@ -1,17 +1,22 @@
 version: '3.8'
 
 services:
-  app:
-    image: worklog-api:latest
+  worklog-api:
+    image: raihanwilly/worklog-api:latest # Use the Docker Hub image
     container_name: worklog-api
     restart: always
     ports:
       - "5000:5000" # Map host port to container port
     volumes:
-      - worklog-volume:/app/wwwroot # Mount the volume into the container
+      - worklog-volume:/app/data # Persistent volume for data
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
+    logging:
+      driver: "json-file" # Configure logging
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   worklog-volume:
-    driver: local
+    driver: local # Ensure the volume is named for persistence
