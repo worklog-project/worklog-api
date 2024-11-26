@@ -72,7 +72,7 @@ if (app.Environment.IsDevelopment())
 // Add your custom exception middleware
 app.ConfigureCustomExceptionMiddleware();
 app.UseCors("AllowAllOrigins");
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseStaticFiles();
