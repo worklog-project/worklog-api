@@ -32,13 +32,13 @@ jobs:
     # Build the Docker image
     - name: Build Docker Image
       run: |
-        docker build -t your-docker-username/worklog-api:latest .
+        docker build -t "${{ secrets.DOCKER_USERNAME }}"/worklog-api:latest .
 
     # Push Docker Image to Registry
     - name: Push Docker Image
       run: |
         echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-        docker push your-docker-username/worklog-api:latest
+        docker push "${{ secrets.DOCKER_USERNAME }}"/worklog-api:latest
 
     # Deploy to VPS
     - name: Deploy to VPS
@@ -78,7 +78,7 @@ jobs:
           docker rm worklog-api || true
 
           # Pull the latest image
-          docker pull your-docker-username/worklog-api:latest
+          docker pull "${{ secrets.DOCKER_USERNAME }}"/worklog-api:latest
 
           # Navigate to the application directory
           cd /home/$VPS_USER/worklog-api
