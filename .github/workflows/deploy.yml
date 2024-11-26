@@ -29,23 +29,16 @@ jobs:
         dotnet restore
         dotnet publish -c Release -o publish
 
-    # Log in to Docker Hub
-    - name: Log in to Docker Hub
-      env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      run: |
-        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-
-    # Build and Tag Docker Image
+    # Build the Docker image
     - name: Build Docker Image
       run: |
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/worklog-api:latest .
+        docker build -t your-docker-username/worklog-api:latest .
 
-    # Push Docker Image to Docker Hub
+    # Push Docker Image to Registry
     - name: Push Docker Image
       run: |
-        docker push ${{ secrets.DOCKER_USERNAME }}/worklog-api:latest
+        echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+        docker push your-docker-username/worklog-api:latest
 
     # Deploy to VPS
     - name: Deploy to VPS
@@ -53,19 +46,21 @@ jobs:
         VPS_IP: ${{ secrets.VPS_IP }}
         VPS_USER: ${{ secrets.VPS_USER }}
         VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       run: |
         # Save the private SSH key
         echo "$VPS_SSH_KEY" > private_key
         chmod 600 private_key
 
-        # Ensure the directory exists on the VPS
+        # Ensure the application directory exists on the VPS
         ssh -i private_key -o StrictHostKeyChecking=no $VPS_USER@$VPS_IP "mkdir -p /home/$VPS_USER/worklog-api"
 
-        # Transfer files to the VPS
-        scp -i private_key -o StrictHostKeyChecking=no \
-          docker-compose.yml $VPS_USER@$VPS_IP:/home/$VPS_USER/worklog-api/
+        # Transfer docker-compose.yml to the VPS
+        scp -i private_key -o StrictHostKeyChecking=no docker-compose.yml $VPS_USER@$VPS_IP:/home/$VPS_USER/worklog-api/
+
+        # Backup the existing volume data
+        ssh -i private_key -o StrictHostKeyChecking=no $VPS_USER@$VPS_IP << EOF
+          docker run --rm -v worklog_data:/volume -v /home/$VPS_USER/worklog-api:/backup alpine tar -czvf /backup/volume_backup.tar.gz -C /volume .
+        EOF
 
         # SSH into the VPS and deploy
         ssh -i private_key -o StrictHostKeyChecking=no $VPS_USER@$VPS_IP << EOF
@@ -78,20 +73,17 @@ jobs:
             sudo apt install -y docker-compose-plugin
           fi
 
-          # Log in to Docker Hub on the VPS
-          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-
           # Stop and remove the existing container if it exists
           docker stop worklog-api || true
           docker rm worklog-api || true
 
-          # Pull the latest image from Docker Hub
-          docker pull $DOCKER_USERNAME/worklog-api:latest
+          # Pull the latest image
+          docker pull your-docker-username/worklog-api:latest
 
           # Navigate to the application directory
           cd /home/$VPS_USER/worklog-api
 
-          # Start the container using the pulled image
+          # Start the container with the existing volume
           docker-compose up -d
         EOF
 
