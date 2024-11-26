@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - production
+  pull_request:
+    branches:
+      - production
 
 jobs:
   build-and-deploy:
@@ -26,10 +29,23 @@ jobs:
         dotnet restore
         dotnet publish -c Release -o publish
 
-    # Build the Docker image
+    # Log in to Docker Hub
+    - name: Log in to Docker Hub
+      env:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: |
+        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+    # Build and Tag Docker Image
     - name: Build Docker Image
       run: |
-        docker build -t worklog-api:latest .
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/worklog-api:latest .
+
+    # Push Docker Image to Docker Hub
+    - name: Push Docker Image
+      run: |
+        docker push ${{ secrets.DOCKER_USERNAME }}/worklog-api:latest
 
     # Deploy to VPS
     - name: Deploy to VPS
@@ -37,6 +53,8 @@ jobs:
         VPS_IP: ${{ secrets.VPS_IP }}
         VPS_USER: ${{ secrets.VPS_USER }}
         VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       run: |
         # Save the private SSH key
         echo "$VPS_SSH_KEY" > private_key
@@ -60,16 +78,21 @@ jobs:
             sudo apt install -y docker-compose-plugin
           fi
 
+          # Log in to Docker Hub on the VPS
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
           # Stop and remove the existing container if it exists
           docker stop worklog-api || true
           docker rm worklog-api || true
-          docker rmi worklog-api:latest || true
+
+          # Pull the latest image from Docker Hub
+          docker pull $DOCKER_USERNAME/worklog-api:latest
 
           # Navigate to the application directory
           cd /home/$VPS_USER/worklog-api
 
-          # Start the container
-          docker-compose up -d --build
+          # Start the container using the pulled image
+          docker-compose up -d
         EOF
 
         # Clean up the SSH key
