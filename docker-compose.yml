@@ -1,22 +1,24 @@
-﻿services:
-  
-#  worklog-api:
-#      image: worklog-api
-#      build: ./Dockerfile
+version: '3.8'
 
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: sqlserver
-    environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=Superadmin123@ 
-      - MSSQL_PID=Developer                     
+services:
+  worklog-api:
+    image: raihanwilly/worklog-api:latest # Use the Docker Hub image
+    container_name: worklog-api
+    restart: always
     ports:
-      - "1433:1433"
+      - "5000:8080" # HTTP
+      #- "5001:8081" # HTTPS (optional)
     volumes:
-      - sqlserver_data:/var/opt/mssql
-    restart: on-failure
-  
+      - worklog-volume:/app/data # Persistent volume for data
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      #- ASPNETCORE_HTTPS_PORTS=8081 # Define the HTTPS port
+    logging:
+      driver: "json-file" # Configure logging
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 volumes:
-  sqlserver_data:
-      
+  worklog-volume:
+    driver: local # Ensure the volume is named for persistence
