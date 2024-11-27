@@ -37,6 +37,9 @@ jobs:
         if [[ $GITHUB_REF == 'refs/heads/production' ]]; then
           echo "DB_CONNECTION_STRING=${{ secrets.DB_CONNECTION_STRING_PRODUCTION }}" > .env
         fi
+      shell: bash
+      env:
+        DOTNET_ROOT: /usr/share/dotnet
 
     # Build the Docker image
     - name: Build Docker Image
