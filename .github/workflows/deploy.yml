@@ -3,10 +3,10 @@ name: CI/CD Pipeline for .NET API
 on:
   push:
     branches:
-      - master
+      - production
   pull_request:
     branches:
-      - master
+      - production
 
 jobs:
   build-and-deploy:
@@ -31,10 +31,17 @@ jobs:
     - name: Build .NET Application
       run: dotnet publish "./worklog-api.csproj" -c Release -o publish
 
+    # Create .env file with environment variables for production branch
+    - name: Create .env file for production
+      run: |
+        if [[ $GITHUB_REF == 'refs/heads/production' ]]; then
+          echo "DB_CONNECTION_STRING=${{ secrets.DB_CONNECTION_STRING_PRODUCTION }}" > .env
+        fi
+
     # Build the Docker image
     - name: Build Docker Image
       run: |
-        docker build -t "${{ secrets.DOCKER_USERNAME }}"/worklog-api:latest .
+        docker build -t "${{ secrets.DOCKER_USERNAME }}"/worklog-api:latest . 
 
     # Push Docker Image to Registry
     - name: Push Docker Image
@@ -61,7 +68,7 @@ jobs:
 
         # Backup the existing volume data
         ssh -i private_key -o StrictHostKeyChecking=no $VPS_USER@$VPS_IP << EOF
-          docker run --rm -v worklog_data:/volume -v /home/$VPS_USER/worklog-api:/backup alpine tar -czvf /backup/volume_backup.tar.gz -C /volume .
+          docker run --rm -v worklog_data:/volume -v /home/$VPS_USER/worklog-api:/backup alpine tar -czvf /backup/volume_backup.tar.gz -C /volume . 
         EOF
 
         # SSH into the VPS and deploy
