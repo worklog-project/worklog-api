@@ -9,8 +9,19 @@ using worklog_api.filters;
 using worklog_api.Repository.implementation;
 using worklog_api.Service.implementation;
 using worklog_api.helper;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Load environment variables from .env file
+DotNetEnv.Env.Load();
+
+// Retrieve environment variables
+var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new Exception("Database connection string is not defined in the .env file.");
+}
 
 builder.Services.AddCors(options =>
 {
@@ -44,7 +55,8 @@ builder.Services.AddScoped<IScheduleService, ScheduleService>();
 builder.Services.AddScoped<IBacklogService, BacklogService>();
 builder.Services.AddScoped<IFileUploadHelper, FileUploadHelper>();
 
-builder.Services.AddSingleton<string>(provider => "Server=52.230.116.242,1433;Initial Catalog=worklog;Persist Security Info=False;User ID=sa;Password=Superadmin123@;MultipleActiveResultSets=True;Encrypt=False;Connection Timeout=30;");
+// Use the connection string from the .env file
+builder.Services.AddSingleton<string>(provider => connectionString); 
 builder.Services.AddSingleton(new JwtSecurityTokenHandler());
 
 
