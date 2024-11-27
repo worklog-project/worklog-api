@@ -34,10 +34,11 @@ COPY --from=publish /app/publish ./
 RUN mkdir -p /app/wwwroot/uploads/backlog \
     && chmod -R 755 /app/wwwroot
 
-# Set environment variable for ASP.NET Core environment
-# This can be passed as a build argument or set explicitly in the Dockerfile
-# ARG ASPNETCORE_ENVIRONMENT=Staging
-# ENV ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+# Define build argument
+ARG DB_CONNECTION_STRING
+
+# Set environment variable for the connection string
+ENV DB_CONNECTION_STRING=${DB_CONNECTION_STRING}
 
 # Set the entry point
 ENTRYPOINT ["dotnet", "worklog-api.dll"]
