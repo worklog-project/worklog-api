@@ -30,19 +30,17 @@ WORKDIR /app
 # Copy published files
 COPY --from=publish /app/publish ./
 
+# Create and copy .env file dynamically
+ARG DB_CONNECTION_STRING
+RUN echo "DB_CONNECTION_STRING=${DB_CONNECTION_STRING}" > /app/.env
+
 # Ensure static files and subfolder exist
 RUN mkdir -p /app/wwwroot/uploads/backlog \
     && chmod -R 755 /app/wwwroot
-
-# Set environment variable for ASP.NET Core environment
-# This can be passed as a build argument or set explicitly in the Dockerfile
-# ARG ASPNETCORE_ENVIRONMENT=Staging
-# ENV ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
 
 # Set the entry point
 ENTRYPOINT ["dotnet", "worklog-api.dll"]
 
 # Expose application ports (matching launchSettings.json)
-# The Dockerfile should expose the appropriate ports
 EXPOSE 8080
 EXPOSE 8081
