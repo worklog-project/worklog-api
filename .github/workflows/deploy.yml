@@ -1,0 +1,92 @@
+name: CI/CD Pipeline for .NET API
+
+on:
+  push:
+    branches:
+      - production
+  pull_request:
+    branches:
+      - production
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the repository
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    # Set up .NET Core
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 8.0 # Specify your .NET version
+
+    # Build and Publish the .NET Application
+    - name: Build .NET Application
+      run: |
+        dotnet restore
+        dotnet publish -c Release -o publish
+
+    # Build the Docker image
+    - name: Build Docker Image
+      run: |
+        docker build -t "${{ secrets.DOCKER_USERNAME }}"/worklog-api:latest .
+
+    # Push Docker Image to Registry
+    - name: Push Docker Image
+      run: |
+        echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+        docker push "${{ secrets.DOCKER_USERNAME }}"/worklog-api:latest
+
+    # Deploy to VPS
+    - name: Deploy to VPS
+      env:
+        VPS_IP: ${{ secrets.VPS_IP }}
+        VPS_USER: ${{ secrets.VPS_USER }}
+        VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      run: |
+        # Save the private SSH key
+        echo "$VPS_SSH_KEY" > private_key
+        chmod 600 private_key
+
+        # Ensure the application directory exists on the VPS
+        ssh -i private_key -o StrictHostKeyChecking=no $VPS_USER@$VPS_IP "mkdir -p /home/$VPS_USER/worklog-api"
+
+        # Transfer docker-compose.yml to the VPS
+        scp -i private_key -o StrictHostKeyChecking=no docker-compose.yml $VPS_USER@$VPS_IP:/home/$VPS_USER/worklog-api/
+
+        # Backup the existing volume data
+        ssh -i private_key -o StrictHostKeyChecking=no $VPS_USER@$VPS_IP << EOF
+          docker run --rm -v worklog_data:/volume -v /home/$VPS_USER/worklog-api:/backup alpine tar -czvf /backup/volume_backup.tar.gz -C /volume .
+        EOF
+
+        # SSH into the VPS and deploy
+        ssh -i private_key -o StrictHostKeyChecking=no $VPS_USER@$VPS_IP << EOF
+          # Ensure Docker is running
+          sudo systemctl start docker
+
+          # Ensure Docker Compose is installed
+          if ! command -v docker-compose &> /dev/null; then
+            sudo apt update
+            sudo apt install -y docker-compose-plugin
+          fi
+
+          # Stop and remove the existing container if it exists
+          docker stop worklog-api || true
+          docker rm worklog-api || true
+
+          # Pull the latest image
+          docker pull "${{ secrets.DOCKER_USERNAME }}"/worklog-api:latest
+
+          # Navigate to the application directory
+          cd /home/$VPS_USER/worklog-api
+
+          # Start the container with the existing volume
+          docker-compose up -d
+        EOF
+
+        # Clean up the SSH key
+        rm -f private_key
+      shell: bash
