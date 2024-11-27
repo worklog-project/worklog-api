@@ -3,10 +3,10 @@ name: CI/CD Pipeline for .NET API
 on:
   push:
     branches:
-      - master
+      - production
   pull_request:
     branches:
-      - master
+      - production
 
 jobs:
   build-and-deploy:
@@ -30,6 +30,14 @@ jobs:
     # Build and Publish the .NET Application
     - name: Build .NET Application
       run: dotnet publish "./worklog-api.csproj" -c Release -o publish
+
+    # Create .env file for production environment directly
+    - name: Create .env file for production
+      run: |
+        echo "DB_CONNECTION_STRING=${{ secrets.DB_CONNECTION_STRING_PRODUCTION }}" > .env
+      shell: bash
+      env:
+        DOTNET_ROOT: /usr/share/dotnet
 
     # Build the Docker image
     - name: Build Docker Image
@@ -61,34 +69,7 @@ jobs:
 
         # Backup the existing volume data
         ssh -i private_key -o StrictHostKeyChecking=no $VPS_USER@$VPS_IP << EOF
-          docker run --rm -v worklog_data:/volume -v /home/$VPS_USER/worklog-api:/backup alpine tar -czvf /backup/volume_backup.tar.gz -C /volume .
+          docker run --rm -v worklog_data:/volume -v /home/$VPS_USER/worklog-api:/backup alpine tar -czvf /backup/volume_backup.tar.gz -C /volume . 
         EOF
 
-        # SSH into the VPS and deploy
-        ssh -i private_key -o StrictHostKeyChecking=no $VPS_USER@$VPS_IP << EOF
-          # Ensure Docker is running
-          sudo systemctl start docker
-
-          # Ensure Docker Compose is installed
-          if ! command -v docker-compose &> /dev/null; then
-            sudo apt update
-            sudo apt install -y docker-compose-plugin
-          fi
-
-          # Stop and remove the existing container if it exists
-          docker stop worklog-api || true
-          docker rm worklog-api || true
-
-          # Pull the latest image
-          docker pull "${{ secrets.DOCKER_USERNAME }}"/worklog-api:latest
-
-          # Navigate to the application directory
-          cd /home/$VPS_USER/worklog-api
-
-          # Start the container with the existing volume
-          docker-compose up -d
-        EOF
-
-        # Clean up the SSH key
-        rm -f private_key
-      shell: bash
+        # SSH into the VPS and d
