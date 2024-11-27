@@ -40,12 +40,14 @@ jobs:
         shell: bash
         env:
           DOTNET_ROOT: /usr/share/dotnet
-
-      # Build the Docker image
+      
+      # Build the Docker image with build arguments
       - name: Build Docker Image
         id: build-image
         run: |
-          docker build -t "${{ secrets.DOCKER_USERNAME }}/worklog-api:latest" .
+          docker build \
+            --build-arg DB_CONNECTION_STRING=${{ secrets.DB_CONNECTION_STRING_PRODUCTION }} \
+            -t "${{ secrets.DOCKER_USERNAME }}/worklog-api:latest" .
 
       # Push Docker Image to Registry
       - name: Push Docker Image
