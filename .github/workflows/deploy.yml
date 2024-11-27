@@ -25,11 +25,11 @@ jobs:
 
     # Restore dependencies for the main application project
     - name: Restore .NET Application
-      run: dotnet restore worklog-api/worklog-api.csproj
+      run: dotnet restore ../../worklog-api.csproj
 
     # Build and Publish the .NET Application
     - name: Build .NET Application
-      run: dotnet publish worklog-api/worklog-api.csproj -c Release -o publish
+      run: dotnet publish ../../worklog-api.csproj -c Release -o publish
 
     # Build the Docker image
     - name: Build Docker Image
