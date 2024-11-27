@@ -8,7 +8,7 @@ public class DailyWorklogDetailResponse
     public string _id {get; set;}
     
     [JsonPropertyName("hourMeter")]
-    public int _hourmeter {get; set;}
+    public double _hourmeter {get; set;}
     
     [JsonPropertyName("startTime")]
     public TimeSpan _startTime {get; set;}
@@ -45,5 +45,8 @@ public class DailyWorklogDetailResponse
     [JsonPropertyName("detailSheet")]
     [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public virtual Dictionary<string, object> _sheetDetail { get; set; }
-    
+
+    [JsonPropertyName("htmlForm")]
+    public string _htmlForm { get; set; }
+
 }

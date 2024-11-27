@@ -54,15 +54,23 @@ namespace worklog_api.Service.implementation
             
             int count = 0;
 
-            if (egiNameById.Substring(0, 2) == "HD")
+            if (egiNameById.Substring(0, 3) == "HD7")
             {
                 count = 4;
             }
-            else
+            else if (egiNameById.Substring(0, 2) == "PC")
             {
                 count = 3;
             }
-            
+            else if (egiNameById.Substring(0, 3) == "HD4")
+            {
+                count = 2;
+            }
+            else
+            {
+                throw new BadRequestException("EGI not found");
+            }
+
 
             var generateId = Guid.NewGuid();
             DailyModel dailyModel = new DailyModel()
@@ -108,11 +116,24 @@ namespace worklog_api.Service.implementation
         {
             var guid = Guid.Parse(id);
             var dailyDetailById = await _dailyRepository.getDailyDetailById(guid);
+            string htmlForm = string.Empty;
             
-
             if (dailyDetailById == null)
             {
                 throw new NotFoundException("Daily Detail with given Id not found");
+            }
+
+            if (dailyDetailById._egiName.Contains("PC"))
+            {
+                htmlForm = await FormToPDF.ExcavatorFormToPDF(dailyDetailById);
+            } 
+            else if (dailyDetailById._egiName.Contains("HD785"))
+            {
+                htmlForm = await FormToPDF.HD785FormToPDF(dailyDetailById);
+            } 
+            else if (dailyDetailById._egiName.Contains("HD4657R"))
+            {
+                htmlForm = await FormToPDF.ExcavatorFormToPDF(dailyDetailById);
             }
 
             var backlogs = await _backlogRepository.GetByDailyDetailIDAsync(guid);
@@ -131,7 +152,8 @@ namespace worklog_api.Service.implementation
                 _date = dailyDetailById._date.Date.ToString("yyyy-MM-dd"),
                 _cnid = dailyDetailById._cnId.ToString(),
                 _cnName = dailyDetailById._cnName,
-                _egiName = dailyDetailById._egiName
+                _egiName = dailyDetailById._egiName,
+                _htmlForm = htmlForm
             };
         }
 

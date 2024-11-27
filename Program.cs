@@ -58,6 +58,7 @@ builder.Services.AddScoped<IFileUploadHelper, FileUploadHelper>();
 // Use the connection string from the .env file
 builder.Services.AddSingleton<string>(provider => connectionString); 
 builder.Services.AddSingleton(new JwtSecurityTokenHandler());
+builder.Services.AddSingleton(new DateHelper());
 
 
 

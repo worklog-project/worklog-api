@@ -13,10 +13,12 @@ namespace worklog_api.Repository.implementation
     {
 
         private readonly string _connectionString;
+        private readonly ILogger<ScheduleRepository> _logger;
 
-        public ScheduleRepository(string connectionString)
+        public ScheduleRepository(string connectionString, ILogger<ScheduleRepository> logger)
         {
             _connectionString = connectionString;
+            _logger = logger;
         }
 
         public async Task Create(Schedule schedule)
@@ -302,8 +304,77 @@ namespace worklog_api.Repository.implementation
             }
         }
 
+        public async Task<Guid> GetScheduleByMonth(DateTime scheduleMonth)
+        {
+            var scheduleId = Guid.Empty;
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
 
+                var query = @"SELECT id FROM Schedule WHERE Schedule_Month = @month";
+                
+                try
+                {
+                    var sqlCommand = new SqlCommand(query,connection);
+                    sqlCommand.Parameters.AddWithValue("@month", scheduleMonth);
+                    
+                    using (var reader = await sqlCommand.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            scheduleId = reader.GetGuid(reader.GetOrdinal("id"));
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    _logger.LogWarning(e, "GetScheduleByMonth");
+                    throw;
+                }
+            }
+            return scheduleId;
+        }
 
+        public async Task<IEnumerable<ScheduleDetail>> GetScheduleDetailsById(Guid scheduleId)
+        {
+            var scheduleDetails = new List<ScheduleDetail>();
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                var query = @"SELECT * FROM Schedule_Detail WHERE Schedule_ID = @id";
+                
+                try
+                {
+                    var sqlCommand = new SqlCommand(query,connection);
+                    sqlCommand.Parameters.AddWithValue("@id", scheduleId);
+                    
+                    using (var reader = await sqlCommand.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var scheduleDetail = new ScheduleDetail
+                            {
+                                ID = reader.GetGuid(reader.GetOrdinal("ID")),
+                                ScheduleID = reader.GetGuid(reader.GetOrdinal("Schedule_ID")),
+                                PlannedDate = reader.GetDateTime(reader.GetOrdinal("Planned_Date")),
+                                IsDone = reader.GetBoolean(reader.GetOrdinal("Is_Done")),
+                                DailyID = reader.GetGuid(reader.GetOrdinal("Daily_ID")),
+                                CreatedBy = reader.GetString(reader.GetOrdinal("Created_By"))
+                            };
+                
+                            scheduleDetails.Add(scheduleDetail);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    _logger.LogWarning(e, "GetScheduleByMonth");
+                    throw;
+                }
+            }
+            return scheduleDetails;
+        }
     }
 
 }

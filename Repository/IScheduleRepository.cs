@@ -8,5 +8,10 @@ namespace worklog_api.Repository
         Task Create(Schedule schedule);
         Task<Schedule> GetScheduleDetailsByMonth(DateTime scheduleMonth, Guid? egiId = null, Guid? cnId = null);
         Task UpdateScheduleDetails(Guid scheduleId, List<ScheduleDetail> updatedDetails);
+        
+        Task<Guid> GetScheduleByMonth(DateTime scheduleMonth);
+        
+        Task<IEnumerable<ScheduleDetail>> GetScheduleDetailsById(Guid scheduleId);
+        
     }
 }
