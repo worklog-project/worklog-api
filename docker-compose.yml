@@ -7,12 +7,10 @@ services:
     restart: always
     ports:
       - "5000:8080" # HTTP
-      #- "5001:8081" # HTTPS (optional)
-     volumes:
-      - worklog-volume:/app/wwwroot/uploads # Mount to the uploads directory
+    volumes:
+      - worklog-volume:/app/wwwroot/uploads # Persistent volume for uploads
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      #- ASPNETCORE_HTTPS_PORTS=8081 # Define the HTTPS port
+      ASPNETCORE_ENVIRONMENT: Production
     logging:
       driver: "json-file" # Configure logging
       options:
