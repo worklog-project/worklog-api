@@ -78,7 +78,6 @@ namespace worklog_api.Service.implementation
 
         public async Task<Byte[]> GetScheduleByMonth(string scheduleMonth)
         {
-            
             var dateTime = DateTime.Parse(scheduleMonth);
             var culture = new CultureInfo("id-ID"); // Indonesian culture info
             var monthName = dateTime.ToString("MMMM", culture); // Get the full month name
@@ -88,8 +87,9 @@ namespace worklog_api.Service.implementation
             var scheduleDetails = scheduleByMonth.ToList();
 
             var dayByMonthAndYear = _dateHelper.GetDaysByMonthAndYear(DateTime.Parse(scheduleMonth));
-            
-            
+
+            var calculateOverallWeeklyAchievement = CalculateWeeklyAchievementsForMonth(scheduleDetails, dateTime);
+
             using (var workbook = new XLWorkbook())
             {
                 // Construct the worksheet name and title
@@ -157,8 +157,6 @@ namespace worklog_api.Service.implementation
                             var planedDay = sch.PlannedDate;
                             if ( planedDay == currentDay)
                             {
-                                Console.WriteLine(planedDay);
-                                Console.WriteLine(sch.PlannedDate);
                                 worksheet.Cell(row, innerCellIndex).Value = "P";
                                 worksheet.Cell(row, innerCellIndex).Style.Fill.BackgroundColor = XLColor.FromHtml("#03bafc");
                                 totalP++;
@@ -166,7 +164,6 @@ namespace worklog_api.Service.implementation
                                 // checked if details.Is_Done == true. 
                                 if (sch.IsDone == true)
                                 {
-                                    Console.WriteLine("is done is true");
                                     worksheet.Cell(row, innerCellIndex+1).Value = "A";
                                     worksheet.Cell(row, innerCellIndex +1).Style.Fill.BackgroundColor = XLColor.FromHtml("#fc03d7");
                                     totalA++;
@@ -178,7 +175,6 @@ namespace worklog_api.Service.implementation
                     // untuk ph, th, ach
                     worksheet.Cell(row, innerCellIndex).Value = totalP.ToString();
                     worksheet.Cell(row, ++innerCellIndex).Value = totalA.ToString();
-                    // worksheet.Cell(row, innerCellIndex+1).Value = (totalA / totalP) * 100;
                     worksheet.Cell(row, innerCellIndex+1).Value = (totalP == 0) ? 0 : (((double)totalA / totalP) * 100).ToString() + " %";
                     
                 }
@@ -217,44 +213,21 @@ namespace worklog_api.Service.implementation
                 int weeklyCellIndex = 4; // Starting index
                 int weeklyRow = end + 2; // Row where weekly averages will go
                 int daysInWeek = 7;
-                int columnsPerWeek = daysInWeek * 2;
-                // Loop through the data in chunks of 7 days
-                for (int weekStart = 0; weekStart < dayByMonthAndYear.Count; weekStart += daysInWeek)
+                
+                foreach (var weeklyAchievement in calculateOverallWeeklyAchievement)
                 {
-                    double weeklySum = 0;
-                    int validDays = 0;
-                    
-                    // Calculate how many days are left in this week
-                    int remainingDays = Math.Min(daysInWeek, dayByMonthAndYear.Count - weekStart);
+                    // Calculate how many days are in this week
+                    int remainingDays = (weeklyAchievement.WeekEnd - weeklyAchievement.WeekStart).Days + 1;
                     int columnsToMerge = remainingDays * 2; // Each day takes 2 columns
 
-                    // Sum up 7 days worth of values (or less if we're at the end)
-                    for (int day = 0; day < daysInWeek && (weekStart + day) < dayByMonthAndYear.Count; day++)
-                    {
-                        int currentCellIndex = weeklyCellIndex + (day * 2);
-        
-                        // Get the value from the daily calculation row (end + 1)
-                        var dailyValue = worksheet.Cell(end + 1, currentCellIndex).Value;
-        
-                        if (!dailyValue.IsBlank  && double.TryParse(dailyValue.ToString(), out double value))
-                        {
-                            weeklySum += value;
-                            validDays++;
-                        }
-                    }
+                    // Merge cells for this week
+                    var mergedCell = worksheet.Range(
+                        worksheet.Cell(weeklyRow, weeklyCellIndex), 
+                        worksheet.Cell(weeklyRow, weeklyCellIndex + columnsToMerge - 1)
+                    ).Merge();
 
-                    // Calculate weekly average
-                    var mergedCell = worksheet.Range(worksheet.Cell(weeklyRow, weeklyCellIndex), 
-                        worksheet.Cell(weeklyRow, weeklyCellIndex + columnsToMerge -1)).Merge();
-
-                    if (validDays > 0)
-                    {
-                        mergedCell.Value = weeklySum / validDays; // Average of valid days
-                    }
-                    else
-                    {
-                        mergedCell.Value = 0;
-                    }
+                    // Set the achievement percentage
+                    mergedCell.Value = weeklyAchievement.OverallAchievementPercentage;
 
                     // Move to next week's starting column
                     weeklyCellIndex += daysInWeek * 2; // Multiply by 2 because each day uses 2 columns
@@ -313,5 +286,88 @@ namespace worklog_api.Service.implementation
             }
             
         }
+        
+        public class WeeklyAchievement
+        {
+            public DateTime WeekStart { get; set; }
+            public DateTime WeekEnd { get; set; }
+            public int TotalPlannedTasks { get; set; }
+            public int TotalAchievedTasks { get; set; }
+            public double OverallAchievementPercentage { get; set; }
+            public List<EgiTaskDetails> EgiDetails { get; set; }
+        }
+
+        public class EgiTaskDetails
+        {
+            public string EgiName { get; set; }
+            public int PlannedTasks { get; set; }
+            public int AchievedTasks { get; set; }
+            public double AchievementPercentage { get; set; }
+        }
+        
+        public List<WeeklyAchievement> CalculateWeeklyAchievementsForMonth(List<Schedule> scheduleByMonth, DateTime monthYear)
+{
+    var weeklyAchievements = new List<WeeklyAchievement>();
+
+    // Get the first and last day of the month
+    var firstDayOfMonth = new DateTime(monthYear.Year, monthYear.Month, 1);
+    var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+    // Iterate through weeks in the month
+    var currentWeekStart = firstDayOfMonth;
+    while (currentWeekStart <= lastDayOfMonth)
+    {
+        var currentWeekEnd = currentWeekStart.AddDays(6);
+
+        // Ensure we don't go beyond the last day of the month
+        if (currentWeekEnd > lastDayOfMonth)
+        {
+            currentWeekEnd = lastDayOfMonth;
+        }
+
+        // Filter tasks for this specific week
+        var weekTasks = scheduleByMonth
+            .SelectMany(s => s.ScheduleDetails
+                .Where(sd => sd.PlannedDate >= currentWeekStart && sd.PlannedDate <= currentWeekEnd)
+                .Select(sd => new 
+                {
+                    EgiName = s.Egi,
+                    IsDone = sd.IsDone
+                }))
+            .ToList();
+
+        // Calculate EGI-specific details
+        var egiDetails = weekTasks
+            .GroupBy(t => t.EgiName)
+            .Select(g => new EgiTaskDetails
+            {
+                EgiName = g.Key,
+                PlannedTasks = g.Count(),
+                AchievedTasks = g.Count(t => t.IsDone),
+                AchievementPercentage = g.Count() > 0 
+                    ? Math.Round((double)g.Count(t => t.IsDone) / g.Count() * 100, 2) 
+                    : 0
+            })
+            .ToList();
+
+        // Create weekly achievement (even if no tasks)
+        weeklyAchievements.Add(new WeeklyAchievement
+        {
+            WeekStart = currentWeekStart,
+            WeekEnd = currentWeekEnd,
+            TotalPlannedTasks = weekTasks.Count(),
+            TotalAchievedTasks = weekTasks.Count(t => t.IsDone),
+            OverallAchievementPercentage = weekTasks.Count() > 0
+                ? Math.Round((double)weekTasks.Count(t => t.IsDone) / weekTasks.Count() * 100, 2)
+                : 0,
+            EgiDetails = egiDetails
+        });
+
+        // Move to next week
+        currentWeekStart = currentWeekEnd.AddDays(1);
+    }
+
+    return weeklyAchievements;
+}
     }
 }
