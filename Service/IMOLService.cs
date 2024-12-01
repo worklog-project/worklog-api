@@ -14,5 +14,6 @@ namespace worklog_api.Service
         Task DeleteMOL(Guid id);
         Task ApproveMOL(StatusHistoryModel status, UserModel user, int quantityApproved);
         Task Reject(StatusHistoryModel status, UserModel user);
+        Task<byte[]> ExportMolToExcel(string status);
     }
 }
