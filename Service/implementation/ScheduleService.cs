@@ -201,12 +201,12 @@ namespace worklog_api.Service.implementation
                     if (dailyP > 0)
                     {
                         // Only calculate ratio if dailyP is not zero
-                        mergedCell.Value = ((double)dailyA/dailyP * 100);
+                        mergedCell.Value = ((double)dailyA/dailyP * 100).ToString() + " %";
                     }
                     else 
                     {
                         // Handle the case where dailyP is 0
-                        mergedCell.Value = 0;
+                        mergedCell.Value = "0 %";
                     }
                 }
                 
@@ -227,7 +227,7 @@ namespace worklog_api.Service.implementation
                     ).Merge();
 
                     // Set the achievement percentage
-                    mergedCell.Value = weeklyAchievement.OverallAchievementPercentage;
+                    mergedCell.Value = weeklyAchievement.OverallAchievementPercentage.ToString() + " %";
 
                     // Move to next week's starting column
                     weeklyCellIndex += daysInWeek * 2; // Multiply by 2 because each day uses 2 columns
