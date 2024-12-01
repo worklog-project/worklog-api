@@ -305,5 +305,56 @@ namespace worklog_api.Repository
 
             await command.ExecuteNonQueryAsync();
         }
+
+        public async Task<IEnumerable<MOLModel>> GetMolByStatus(string status)
+        {
+            var molList = new List<MOLModel>();
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                // Build the query to fetch MOL records by status only
+                var query = @"
+                    SELECT * FROM MOL
+                    WHERE (@status IS NULL OR Status = @status)";
+
+                var command = new SqlCommand(query, connection);
+                command.Parameters.AddWithValue("@status", (object)status ?? DBNull.Value);
+
+                // Execute the command and process the results
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        var mol = new MOLModel
+                        {
+                            ID = reader.GetGuid(reader.GetOrdinal("ID")),
+                            KodeNumber = reader.GetString(reader.GetOrdinal("Kode_Number")),
+                            Tanggal = reader.GetDateTime(reader.GetOrdinal("Tanggal")),
+                            WorkOrder = reader.GetString(reader.GetOrdinal("WO")),
+                            HourMeter = reader.GetInt32(reader.GetOrdinal("HM")),
+                            KodeKomponen = reader.GetString(reader.GetOrdinal("Kode_Komponen")),
+                            PartNumber = reader.GetString(reader.GetOrdinal("Part_Number")),
+                            Description = reader.GetString(reader.GetOrdinal("Description")),
+                            Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
+                            Categories = reader.GetString(reader.GetOrdinal("Categories")),
+                            Remark = reader.GetString(reader.GetOrdinal("Remark")),
+                            RequestBy = reader.GetString(reader.GetOrdinal("Request_By")),
+                            Status = reader.GetString(reader.GetOrdinal("Status")),
+                            Version = reader.GetInt32(reader.GetOrdinal("Version")),
+                            CreatedBy = reader.GetString(reader.GetOrdinal("Created_By")),
+                            UpdatedBy = reader.GetString(reader.GetOrdinal("Updated_By")),
+                            CreatedAt = reader.GetDateTime(reader.GetOrdinal("Created_At")),
+                            UpdatedAt = reader.GetDateTime(reader.GetOrdinal("Updated_At"))
+                        };
+                        molList.Add(mol);
+                    }
+                }
+            }
+
+            return molList;
+        }
+
     }
 }

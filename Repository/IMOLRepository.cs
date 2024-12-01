@@ -13,5 +13,6 @@ namespace worklog_api.Repository
         Task Update(MOLModel mol);
         Task Delete(Guid id);
         Task UpdateApprovedQuantity(Guid id, int quantityApproved);
+        Task <IEnumerable<MOLModel>> GetMolByStatus(string status);
     }
 }
