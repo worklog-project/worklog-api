@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Runtime.InteropServices.JavaScript;
 using ClosedXML.Excel;
 using worklog_api.error;
@@ -77,21 +78,28 @@ namespace worklog_api.Service.implementation
 
         public async Task<Byte[]> GetScheduleByMonth(string scheduleMonth)
         {
+            
             var dateTime = DateTime.Parse(scheduleMonth);
+            var culture = new CultureInfo("id-ID"); // Indonesian culture info
+            var monthName = dateTime.ToString("MMMM", culture); // Get the full month name
+            var year = dateTime.Year;
+            
             var scheduleByMonth = await _scheduleRepository.GetScheduleByMonth(dateTime);
-            var scheduleDetailsById = await _scheduleRepository.GetScheduleDetailsById(scheduleByMonth);
-
-
-            var scheduleDetails = scheduleDetailsById.ToList();
+            var scheduleDetails = scheduleByMonth.ToList();
 
             var dayByMonthAndYear = _dateHelper.GetDaysByMonthAndYear(DateTime.Parse(scheduleMonth));
             
+            
             using (var workbook = new XLWorkbook())
             {
+                // Construct the worksheet name and title
+                var worksheetName = $"{monthName.ToUpper()} {year}";
+                var title = $"ACHIEVEMENT PROGRAM DAILY CHECK WHEEL {worksheetName}";
+                
                 // Add a worksheet
-                var worksheet = workbook.Worksheets.Add("AGUSTUS 2023");
+                var worksheet = workbook.Worksheets.Add(worksheetName);
                 // Title row with merged cells
-                worksheet.Range("A1:BH1").Merge().Value = "ACHIEVEMENT PROGRAM DAILY CHECK WHEEL AGUSTUS 2023";
+                worksheet.Range("A1:BH1").Merge().Value = title;
 
                 worksheet.Cell("A2").Value = "NO";
                 worksheet.Range("A2:A3").Merge();
@@ -122,7 +130,7 @@ namespace worklog_api.Service.implementation
                     cellIndex += 1;
                 }
                 
-                var end =scheduleDetailsById.Count() + 3;
+                var end = scheduleByMonth.Count() + 3;
                 for (int row = 4; row <= end ; row++)
                 {
                     if (row == end)
@@ -132,8 +140,8 @@ namespace worklog_api.Service.implementation
                     }
                     worksheet.Cell(row, 1).Value = row - 3; // NO column
                     var scheduleDetail = scheduleDetails[row-4];
-                    worksheet.Cell(row, 2).Value = scheduleDetail.ID.ToString(); // EGI column example
-                    worksheet.Cell(row, 3).Value = scheduleDetail.ID.ToString();
+                    worksheet.Cell(row, 2).Value = scheduleDetail.Egi; // EGI column example
+                    worksheet.Cell(row, 3).Value = scheduleDetail.CodeNumber;
                     
                     int totalP = 0;
                     int totalA = 0;
@@ -143,28 +151,35 @@ namespace worklog_api.Service.implementation
                         // Get the current day from the list
                         DateTime currentDay = dayByMonthAndYear[dayIndex];
                         
-                        
-                        // if planned date days == current day, mark that as P
-                        var planedDay = scheduleDetail.PlannedDate;
-                        if ( planedDay == currentDay)
+                        foreach (var sch in scheduleDetail.ScheduleDetails)
                         {
-                            worksheet.Cell(row, innerCellIndex).Value = "P";
-                            worksheet.Cell(row, innerCellIndex).Style.Fill.BackgroundColor = XLColor.FromHtml("#03bafc");
-                            totalP++;
-                            
-                            // checked if details.Is_Done == true. 
-                            if (scheduleDetail.IsDone)
+                            // if planned date days == current day, mark that as P
+                            var planedDay = sch.PlannedDate;
+                            if ( planedDay == currentDay)
                             {
-                                worksheet.Cell(row, innerCellIndex+1).Value = "A";
-                                worksheet.Cell(row, innerCellIndex +1).Style.Fill.BackgroundColor = XLColor.FromHtml("#fc03d7");
-                                totalA++;
+                                Console.WriteLine(planedDay);
+                                Console.WriteLine(sch.PlannedDate);
+                                worksheet.Cell(row, innerCellIndex).Value = "P";
+                                worksheet.Cell(row, innerCellIndex).Style.Fill.BackgroundColor = XLColor.FromHtml("#03bafc");
+                                totalP++;
+                            
+                                // checked if details.Is_Done == true. 
+                                if (sch.IsDone == true)
+                                {
+                                    Console.WriteLine("is done is true");
+                                    worksheet.Cell(row, innerCellIndex+1).Value = "A";
+                                    worksheet.Cell(row, innerCellIndex +1).Style.Fill.BackgroundColor = XLColor.FromHtml("#fc03d7");
+                                    totalA++;
+                                }
                             }
                         }
+                       
                     }
                     // untuk ph, th, ach
                     worksheet.Cell(row, innerCellIndex).Value = totalP.ToString();
                     worksheet.Cell(row, ++innerCellIndex).Value = totalA.ToString();
-                    worksheet.Cell(row, innerCellIndex+1).Value = (totalA / totalP) * 100;
+                    // worksheet.Cell(row, innerCellIndex+1).Value = (totalA / totalP) * 100;
+                    worksheet.Cell(row, innerCellIndex+1).Value = (totalP == 0) ? 0 : (((double)totalA / totalP) * 100).ToString() + " %";
                     
                 }
                 
@@ -190,7 +205,7 @@ namespace worklog_api.Service.implementation
                     if (dailyP > 0)
                     {
                         // Only calculate ratio if dailyP is not zero
-                        mergedCell.Value = (double)dailyA/dailyP * 100;
+                        mergedCell.Value = ((double)dailyA/dailyP * 100);
                     }
                     else 
                     {
@@ -285,7 +300,7 @@ namespace worklog_api.Service.implementation
                 worksheet.Range(
                     worksheet.Cell(end + 1, calcCellIndex+2), 
                     worksheet.Cell(end + 2, calcCellIndex+2)
-                ).Merge().Value = Math.Round(ach, 2);
+                ).Merge().Value = Math.Round(ach, 2).ToString() + " %";
                 
                 // Adjust column widths for better appearance
                 worksheet.Columns().AdjustToContents();

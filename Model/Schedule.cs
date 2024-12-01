@@ -1,5 +1,5 @@
 ﻿namespace worklog_api.Model
-{
+{ 
     public class Schedule
     {
         public Guid ID { get; set; }
