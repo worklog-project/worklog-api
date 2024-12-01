@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Azure.Core;
+using ClosedXML.Excel;
 using Microsoft.CodeAnalysis.Elfie.Serialization;
 using worklog_api.error;
 using worklog_api.Model;
@@ -126,6 +128,70 @@ namespace worklog_api.Service
             {
                 Console.WriteLine(e.Message);
                 throw new InternalServerError(e.Message);
+            }
+        }
+
+        public async Task<byte[]> ExportMolToExcel(string status)
+        {
+            // Fetch data from repository
+            var mols = await _molRepository.GetMolByStatus("COMPLETED");
+
+            using (var workbook = new XLWorkbook())
+            {
+                var worksheet = workbook.Worksheets.Add("MOL Data");
+
+                // Define headers
+                string[] headers = {
+                    "ID", "Kode Number", "Tanggal", "Work Order", "Hour Meter",
+                    "Kode Komponen", "Part Number", "Description", "Quantity", "Quantity Approved",
+                    "Categories", "Remark", "Request By", "Status", "Version",
+                    "Created By", "Updated By", "Created At", "Updated At"
+                };
+
+                // Create header row
+                for (int i = 0; i < headers.Length; i++)
+                {
+                    worksheet.Cell(1, i + 1).Value = headers[i];
+                    worksheet.Cell(1, i + 1).Style.Font.Bold = true;
+                    worksheet.Cell(1, i + 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    worksheet.Cell(1, i + 1).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                    worksheet.Cell(1, i + 1).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                }
+
+                // Populate data rows
+                for (int i = 0; i < mols.Count(); i++)
+                {
+                    var mol = mols.ElementAt(i);
+                    worksheet.Cell(i + 2, 1).Value = mol.ID.ToString();
+                    worksheet.Cell(i + 2, 2).Value = mol.KodeNumber;
+                    worksheet.Cell(i + 2, 3).Value = mol.Tanggal.ToString("yyyy-MM-dd");
+                    worksheet.Cell(i + 2, 4).Value = mol.WorkOrder;
+                    worksheet.Cell(i + 2, 5).Value = mol.HourMeter;
+                    worksheet.Cell(i + 2, 6).Value = mol.KodeKomponen;
+                    worksheet.Cell(i + 2, 7).Value = mol.PartNumber;
+                    worksheet.Cell(i + 2, 8).Value = mol.Description;
+                    worksheet.Cell(i + 2, 9).Value = mol.Quantity;
+                    worksheet.Cell(i + 2, 10).Value = mol.QuantityApproved;
+                    worksheet.Cell(i + 2, 11).Value = mol.Categories;
+                    worksheet.Cell(i + 2, 12).Value = mol.Remark;
+                    worksheet.Cell(i + 2, 13).Value = mol.RequestBy;
+                    worksheet.Cell(i + 2, 14).Value = mol.Status;
+                    worksheet.Cell(i + 2, 15).Value = mol.Version;
+                    worksheet.Cell(i + 2, 16).Value = mol.CreatedBy;
+                    worksheet.Cell(i + 2, 17).Value = mol.UpdatedBy;
+                    worksheet.Cell(i + 2, 18).Value = mol.CreatedAt?.ToString("yyyy-MM-dd");
+                    worksheet.Cell(i + 2, 19).Value = mol.UpdatedAt?.ToString("yyyy-MM-dd");
+                }
+
+                // Auto-fit columns
+                worksheet.Columns().AdjustToContents();
+
+                // Save workbook to memory stream
+                using (var memoryStream = new MemoryStream())
+                {
+                    workbook.SaveAs(memoryStream);
+                    return memoryStream.ToArray();
+                }
             }
         }
     }

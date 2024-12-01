@@ -244,5 +244,17 @@ namespace worklog_api.Controllers
 
             return Ok(response);
         }
+
+        [HttpGet("export")]
+        public async Task<IActionResult> ExportExcel() // Default to "COMPLETED"
+        {
+            // Call service to get MOL data and generate Excel file
+            var excelData = await _molService.ExportMolToExcel("COMPLETED");
+
+            var fileName = $"MOLs_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
+
+            return File(excelData, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+
     }
 }
