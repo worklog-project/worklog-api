@@ -304,36 +304,131 @@ namespace worklog_api.Repository.implementation
             }
         }
 
-        public async Task<Guid> GetScheduleByMonth(DateTime scheduleMonth)
-        {
-            var scheduleId = Guid.Empty;
-            using (var connection = new SqlConnection(_connectionString))
-            {
-                await connection.OpenAsync();
+//         public async Task<IEnumerable<Schedule>> GetScheduleByMonth(DateTime scheduleMonth)
+//         {
+//             var scheduleList = new List<Schedule>();
+//             using (var connection = new SqlConnection(_connectionString))
+//             {
+//                 await connection.OpenAsync();
+//                 var query = @"SELECT Schedule.ID AS id, Schedule.Schedule_Month AS month ,Schedule.EGI_ID AS egi_id, Schedule.CN_ID AS cn_id, E.EGI_Name AS egi_name, ECN.Code_Number AS cn_name
+// FROM Schedule
+//          JOIN dbo.EGI E ON E.ID = Schedule.EGI_ID
+//          JOIN dbo.EGI_Code_Number ECN ON Schedule.CN_ID = ECN.ID
+//          JOIN worklog.dbo.Schedule_Detail sd ON Schedule.ID = sd.Schedule_ID
+// WHERE Schedule_Month = @month;;
+// ";
+//
+//
+//                 try
+//                 {
+//                     var sqlCommand = new SqlCommand(query,connection);
+//                     sqlCommand.Parameters.AddWithValue("@month", scheduleMonth);
+//                     
+//                     using (var reader = await sqlCommand.ExecuteReaderAsync())
+//                     {
+//
+//                         while (await reader.ReadAsync())
+//                         {
+//                             var schedule = new Schedule()
+//                             {
+//                                 ID = reader.GetGuid(reader.GetOrdinal("id")),
+//                                 ScheduleMonth = reader.GetDateTime(reader.GetOrdinal("month")),
+//                                 EGIID = reader.GetGuid(reader.GetOrdinal("egi_id")),
+//                                 CNID = reader.GetGuid(reader.GetOrdinal("cn_id")),
+//                                 Egi = reader.GetString(reader.GetOrdinal("egi_name")),
+//                                 CodeNumber = reader.GetString(reader.GetOrdinal("cn_name")),
+//                             };
+//                             scheduleList.Add(schedule);
+//                         }
+//                     }
+//                 }
+//                 catch (Exception e)
+//                 {
+//                     _logger.LogWarning(e, "GetScheduleByMonth");
+//                     throw;
+//                 }
+//             }
+//             return scheduleList;
+//         } 
+//         
+        
+        public async Task<IEnumerable<Schedule>> GetScheduleByMonth(DateTime scheduleMonth)
+{
+    var scheduleDict = new Dictionary<Guid, Schedule>();
 
-                var query = @"SELECT id FROM Schedule WHERE Schedule_Month = @month";
-                
-                try
+    using (var connection = new SqlConnection(_connectionString))
+    {
+        await connection.OpenAsync();
+
+        var query = @"
+SELECT 
+    Schedule.ID AS schedule_id, 
+    Schedule.EGI_ID AS egi_id, 
+    Schedule.CN_ID AS cn_id, 
+    Schedule.Schedule_Month AS month,
+    E.EGI_Name AS egi_name, 
+    ECN.Code_Number AS code_number,
+    SD.ID AS detail_id,
+    SD.Planned_Date AS planned_date,
+    SD.Is_Done AS is_done
+FROM Schedule
+JOIN dbo.EGI E ON E.ID = Schedule.EGI_ID
+JOIN dbo.EGI_Code_Number ECN ON Schedule.CN_ID = ECN.ID
+LEFT JOIN worklog.dbo.Schedule_Detail SD ON Schedule.ID = SD.Schedule_ID
+WHERE Schedule.Schedule_Month = @month;
+";
+        
+        try
+        {
+            var sqlCommand = new SqlCommand(query, connection);
+            sqlCommand.Parameters.AddWithValue("@month", scheduleMonth);
+            
+            using (var reader = await sqlCommand.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
                 {
-                    var sqlCommand = new SqlCommand(query,connection);
-                    sqlCommand.Parameters.AddWithValue("@month", scheduleMonth);
+                    var scheduleId = reader.GetGuid(reader.GetOrdinal("schedule_id"));
                     
-                    using (var reader = await sqlCommand.ExecuteReaderAsync())
+                    // Create or retrieve schedule if not exists
+                    if (!scheduleDict.TryGetValue(scheduleId, out var schedule))
                     {
-                        if (await reader.ReadAsync())
+                        schedule = new Schedule
                         {
-                            scheduleId = reader.GetGuid(reader.GetOrdinal("id"));
-                        }
+                            ID = scheduleId,
+                            EGIID = reader.GetGuid(reader.GetOrdinal("egi_id")),
+                            CNID = reader.GetGuid(reader.GetOrdinal("cn_id")),
+                            Egi = reader.GetString(reader.GetOrdinal("egi_name")),
+                            CodeNumber = reader.GetString(reader.GetOrdinal("code_number")),
+                            ScheduleMonth = reader.GetDateTime(reader.GetOrdinal("month")),
+                            ScheduleDetails = new List<ScheduleDetail>()
+                        };
+                        
+                        scheduleDict[scheduleId] = schedule;
+                    }
+
+                    // Add Schedule Detail if exists
+                    if (!reader.IsDBNull(reader.GetOrdinal("detail_id")))
+                    {
+                        var scheduleDetail = new ScheduleDetail
+                        {
+                            ID = reader.GetGuid(reader.GetOrdinal("detail_id")),
+                            PlannedDate = reader.GetDateTime(reader.GetOrdinal("planned_date")),
+                            IsDone = reader.GetBoolean(reader.GetOrdinal("is_done"))
+                        };
+                        schedule.ScheduleDetails.Add(scheduleDetail);
                     }
                 }
-                catch (Exception e)
-                {
-                    _logger.LogWarning(e, "GetScheduleByMonth");
-                    throw;
-                }
             }
-            return scheduleId;
         }
+        catch (Exception e)
+        {
+            _logger.LogWarning(e, "GetScheduleByMonth");
+            throw;
+        }
+    }
+
+    return scheduleDict.Values;
+}
 
         public async Task<IEnumerable<ScheduleDetail>> GetScheduleDetailsById(Guid scheduleId)
         {

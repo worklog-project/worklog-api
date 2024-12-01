@@ -50,7 +50,7 @@ builder.Services.AddScoped<IBacklogService, BacklogService>();
 builder.Services.AddScoped<IFileUploadHelper, FileUploadHelper>();
 
 // Use environment variable for connection string
-string connectionString = Env.GetString("DB_CONNECTION_STRING"); // Read from .env file
+string connectionString = Env.GetString("DB_CONNECTION_STRING"); // Read from w.env file
 builder.Services.AddSingleton<string>(provider => connectionString);
 builder.Services.AddSingleton(new JwtSecurityTokenHandler());
 builder.Services.AddSingleton(new DateHelper());
