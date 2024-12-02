@@ -99,34 +99,91 @@ namespace worklog_api.Service.implementation
                 // Add a worksheet
                 var worksheet = workbook.Worksheets.Add(worksheetName);
                 // Title row with merged cells
-                worksheet.Range("A1:BH1").Merge().Value = title;
-
+                worksheet.Range("A1:C1").Merge();
+                
+                // Merge cells and set value
+                worksheet.Range("D1:BH1").Merge();
+                worksheet.Range("D1:BH1").Value = title;
+                
+                // Make the merged cell bold
+                worksheet.Range("D1:BH1").Style.Font.Bold = true;
+                
+                // Increase row height (adjust the value as needed)
+                worksheet.Row(1).Height = 30; // Set row height to 30 points
+                
+                
                 worksheet.Cell("A2").Value = "NO";
                 worksheet.Range("A2:A3").Merge();
+                worksheet.Range("A2:A3").Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
                 worksheet.Cell("B2").Value = "EGI";
                 worksheet.Range("B2:B3").Merge();
+                worksheet.Range("B2:B3").Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+                
                 worksheet.Cell("C2").Value = "CN";
                 worksheet.Range("C2:C3").Merge();
+                worksheet.Range("C2:C3").Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
                 
 
+                worksheet.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                worksheet.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                
+                worksheet.SheetView.FreezeColumns(3);
+                worksheet.SheetView.FreezeRows(3);
+                
                 
                 // Loop through the cells, starting at column index 6
                 int cellIndex = 4; // Initialize outside the loop to use later
                 for (int dayIndex = 0; dayIndex < dayByMonthAndYear.Count; cellIndex += 2, dayIndex++)
                 {
+                    CultureInfo indonesianCulture = new CultureInfo("id-ID");
                     // Get the current day from the list
-                    string currentDay = dayByMonthAndYear[dayIndex].ToString("dddd");
+                    string currentDay = dayByMonthAndYear[dayIndex].ToString("dddd", indonesianCulture);
                     // Map currentDay to the cell `cellIndex`
                     worksheet.Cell(2, cellIndex).Value = currentDay;
+                    worksheet.Cell(2, cellIndex).Style.Font.Bold = true;
+                    worksheet.Range(worksheet.Cell(2, cellIndex), worksheet.Cell(2, cellIndex+1)).Merge();
+                    worksheet.Range(worksheet.Cell(2, cellIndex), worksheet.Cell(2, cellIndex+1)).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+                    if (currentDay == "Minggu")
+                    {
+                        worksheet.Range(worksheet.Cell(2, cellIndex), worksheet.Cell(2, cellIndex+1)).Style.Fill.BackgroundColor = XLColor.FromArgb(255, 255,0,0);
+                    }
+                    else
+                    {
+                        worksheet.Range(worksheet.Cell(2, cellIndex), worksheet.Cell(2, cellIndex+1)).Style.Fill.BackgroundColor = XLColor.FromArgb(255, 0,176,80);
+                    }
+
+                    
                     worksheet.Cell(3, cellIndex).Value = (dayIndex + 1).ToString();
+                    worksheet.Cell(3, cellIndex).Style.Fill.BackgroundColor = XLColor.FromArgb(255, 0,176,80);
+                    worksheet.Range(worksheet.Cell(3, cellIndex), worksheet.Cell(3, cellIndex+1)).Merge();
+                    worksheet.Range(worksheet.Cell(3, cellIndex), worksheet.Cell(3, cellIndex+1)).Style.Fill.BackgroundColor = XLColor.FromArgb(255, 0,176,80);
+                    worksheet.Range(worksheet.Cell(3, cellIndex), worksheet.Cell(3, cellIndex+1)).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
                 }
 
                 List<string> constantColumns = new List<string> { "TOTAL P", "TOTAL A", "ACH" };
                 foreach (string constant in constantColumns)
                 {
+                    
                     worksheet.Cell(2, cellIndex).Value = constant;
-                    worksheet.Cell(2, cellIndex).Value = constant;
-                    worksheet.Cell(2, cellIndex).Value = constant;
+                    worksheet.Cell(2, cellIndex).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                    worksheet.Range(worksheet.Cell(2, cellIndex), worksheet.Cell(3, cellIndex)).Merge();
+
+                    if (constant == "TOTAL P")
+                    {
+                        worksheet.Cell(2, cellIndex).Style.Fill.BackgroundColor = XLColor.FromArgb(255, 0,176,240);
+                    }else if (constant == "TOTAL A")
+                    {
+                        worksheet.Cell(2, cellIndex).Style.Fill.BackgroundColor = XLColor.FromArgb(255, 255,255,0);
+
+                    }else if (constant == "ACH")
+                    {
+                        worksheet.Cell(2, cellIndex).Style.Fill.BackgroundColor = XLColor.FromArgb(255, 146,208,80);
+
+                    }
+                    
                     cellIndex += 1;
                 }
                 
@@ -136,12 +193,20 @@ namespace worklog_api.Service.implementation
                     if (row == end)
                     {
                         worksheet.Cell(end+1, 3).Value = "Daily";
+                        worksheet.Cell(end+1, 3).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+                        worksheet.Cell(end+1, 1).Style.Border.TopBorder = XLBorderStyleValues.Thin;
+                        worksheet.Cell(end+1, 2).Style.Border.TopBorder = XLBorderStyleValues.Thin;
+
                         worksheet.Cell(end+2, 3).Value = "Weekly";
+                        worksheet.Cell(end+2, 3).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
                     }
                     worksheet.Cell(row, 1).Value = row - 3; // NO column
                     var scheduleDetail = scheduleDetails[row-4];
                     worksheet.Cell(row, 2).Value = scheduleDetail.Egi; // EGI column example
+                    worksheet.Column(2).Width = 15; 
                     worksheet.Cell(row, 3).Value = scheduleDetail.CodeNumber;
+                    worksheet.Column(3).Width = 15; 
                     
                     int totalP = 0;
                     int totalA = 0;
@@ -151,8 +216,16 @@ namespace worklog_api.Service.implementation
                         // Get the current day from the list
                         DateTime currentDay = dayByMonthAndYear[dayIndex];
                         
+                        worksheet.Column(innerCellIndex).Width = 5; // Set a fixed width
+                        worksheet.Column(innerCellIndex+1).Width = 5; // Ensure both columns have same width
+                        
+                        worksheet.Cell(row, innerCellIndex).Style.Border.OutsideBorder = XLBorderStyleValues.Thin; 
+                        worksheet.Cell(row, innerCellIndex+1).Style.Border.OutsideBorder = XLBorderStyleValues.Thin; 
+
+                        
                         foreach (var sch in scheduleDetail.ScheduleDetails)
                         {
+                            
                             // if planned date days == current day, mark that as P
                             var planedDay = sch.PlannedDate;
                             if ( planedDay == currentDay)
@@ -170,13 +243,17 @@ namespace worklog_api.Service.implementation
                                 }
                             }
                         }
-                       
                     }
                     // untuk ph, th, ach
                     worksheet.Cell(row, innerCellIndex).Value = totalP.ToString();
-                    worksheet.Cell(row, ++innerCellIndex).Value = totalA.ToString();
-                    worksheet.Cell(row, innerCellIndex+1).Value = (totalP == 0) ? 0 : (((double)totalA / totalP) * 100).ToString() + " %";
+                    worksheet.Cell(row, innerCellIndex).Style.Border.OutsideBorder = XLBorderStyleValues.Thin ;
                     
+                    worksheet.Cell(row, ++innerCellIndex).Value = totalA.ToString();
+                    worksheet.Cell(row, innerCellIndex).Style.Border.OutsideBorder = XLBorderStyleValues.Thin ;
+
+                    var ac = ((double)totalA / totalP) * 100;
+                    worksheet.Cell(row, innerCellIndex+1).Value = (totalP == 0) ? 0 : Math.Round(ac, 2).ToString() + " %";
+                    worksheet.Cell(row, innerCellIndex+1).Style.Border.OutsideBorder = XLBorderStyleValues.Thin ;
                 }
                 
                 int outerCellIndex = 4; // Initialize outside the loop to use later
@@ -197,11 +274,13 @@ namespace worklog_api.Service.implementation
                     }
                     var mergedCell = worksheet.Range(worksheet.Cell(end+1, outerCellIndex), 
                         worksheet.Cell(end+1, outerCellIndex+1)).Merge();
-                                   
+                    mergedCell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin; 
+
                     if (dailyP > 0)
                     {
                         // Only calculate ratio if dailyP is not zero
-                        mergedCell.Value = ((double)dailyA/dailyP * 100).ToString() + " %";
+                        var a = (double)dailyA/dailyP * 100;
+                        mergedCell.Value = Math.Round(a, 2).ToString() + " %";
                     }
                     else 
                     {
@@ -225,6 +304,8 @@ namespace worklog_api.Service.implementation
                         worksheet.Cell(weeklyRow, weeklyCellIndex), 
                         worksheet.Cell(weeklyRow, weeklyCellIndex + columnsToMerge - 1)
                     ).Merge();
+
+                    mergedCell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin; 
 
                     // Set the achievement percentage
                     mergedCell.Value = weeklyAchievement.OverallAchievementPercentage.ToString() + " %";
@@ -251,6 +332,12 @@ namespace worklog_api.Service.implementation
                     worksheet.Cell(end + 2, calcCellIndex)
                 ).Merge().Value = sumTotalP;
 
+                worksheet.Range(
+                    worksheet.Cell(end + 1, calcCellIndex), 
+                    worksheet.Cell(end + 2, calcCellIndex)
+                ).Merge().Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+                
                 // Calculate total A
                 double sumTotalA = 0;
                 for (int row = 4; row <= end; row++)
@@ -266,6 +353,10 @@ namespace worklog_api.Service.implementation
                     worksheet.Cell(end + 2, calcCellIndex+1)
                 ).Merge().Value = sumTotalA;
 
+                worksheet.Range(
+                    worksheet.Cell(end + 1, calcCellIndex+1), 
+                    worksheet.Cell(end + 2, calcCellIndex+1)
+                ).Merge().Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
 
                 // Calculate ACH (sum of Total A / sum of Total P * 100)
                 double ach = sumTotalP > 0 ? (sumTotalA / sumTotalP) * 100 : 0;
@@ -275,8 +366,11 @@ namespace worklog_api.Service.implementation
                     worksheet.Cell(end + 2, calcCellIndex+2)
                 ).Merge().Value = Math.Round(ach, 2).ToString() + " %";
                 
-                // Adjust column widths for better appearance
-                worksheet.Columns().AdjustToContents();
+                worksheet.Range(
+                    worksheet.Cell(end + 1, calcCellIndex+2), 
+                    worksheet.Cell(end + 2, calcCellIndex+2)
+                ).Merge().Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                
                 // Save the workbook
                 using (var stream = new MemoryStream())
                 {
