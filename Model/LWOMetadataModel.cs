@@ -15,6 +15,7 @@ namespace worklog_api.Model
         public string Komponen { get; set; }
         public string Keterangan { get; set; }
         public int Version { get; set; }
+        public List<String>? ImagesName { get; set; }
         public string CreatedBy { get; set; }
         public string UpdatedBy { get; set; }
         public DateTime CreatedAt { get; set; }

@@ -117,27 +117,24 @@ namespace worklog_api.Controllers
 
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] LWOCreateDto lwoDto)
+        public async Task<IActionResult> Update(Guid id, [FromForm] String lwoJson, [FromForm] IFormFileCollection images)
         {
-            var existingLwo = await _lwoService.GetLWOById(id);
-            if (existingLwo == null)
-                return NotFound(new
+
+            // Basic validation
+            if (string.IsNullOrWhiteSpace(lwoJson))
+            {
+                return BadRequest(new
                 {
-                    StatusCode = 404,
-                    Message = "LWO not found"
+                    StatusCode = 400,
+                    Message = "LWO data is required"
                 });
+            }
 
-            existingLwo.WONumber = lwoDto.WONumber;
-            existingLwo.WOType = lwoDto.WOType;
-            existingLwo.Activity = lwoDto.Activity;
-            existingLwo.HourMeter = lwoDto.HourMeter;
-            existingLwo.TimeStart = lwoDto.TimeStart;
-            existingLwo.TimeEnd = lwoDto.TimeEnd;
-            existingLwo.PIC = lwoDto.PIC;
-            existingLwo.LWOType = lwoDto.LWOType;
-            existingLwo.Version = lwoDto.Version;
+            var user = JWT.GetUserInfo(HttpContext);
+            var lwo = JsonConvert.DeserializeObject<LWOModel>(lwoJson);
+            lwo.UpdatedBy = user.username;
 
-            await _lwoService.UpdateLWO(existingLwo);
+            await _lwoService.UpdateLWO(id, lwo, images);
 
             var updatedLwo = await _lwoService.GetLWOById(id);
 
