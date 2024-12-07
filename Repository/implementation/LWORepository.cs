@@ -15,38 +15,75 @@ namespace worklog_api.Repository
             _connectionString = connectionString;
         }
 
-        public async Task<IEnumerable<LWOModel>> GetAll()
+        public async Task<(IEnumerable<LWOModel>, int totalCount)> GetAll(int pageNumber, int pageSize, string sortBy, string sortDirection, DateTime? startDate, DateTime? endDate, string requestBy)
         {
+            var lwoList = new List<LWOModel>();
+            int totalCount = 0;
+
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
 
-                var command = new SqlCommand("SELECT * FROM LWO", connection);
+                // Build the SQL query
+                var query = $@"
+                -- Fetch paginated LWO records
+                SELECT * FROM LWO 
+                WHERE (@startDate IS NULL OR CAST(WO_Date AS DATE) >= CAST(@startDate AS DATE)) 
+                AND (@endDate IS NULL OR CAST(WO_Date AS DATE) <= CAST(@endDate AS DATE))
+                AND (@requestBy IS NULL OR PIC LIKE '%' + @requestBy + '%')
+                ORDER BY {sortBy} {sortDirection}
+                OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;
 
-                using (var reader = await command.ExecuteReaderAsync())
+                -- Fetch total record count
+                SELECT COUNT(*) FROM LWO
+                WHERE (@startDate IS NULL OR CAST(WO_Date AS DATE) >= CAST(@startDate AS DATE))
+                AND (@endDate IS NULL OR CAST(WO_Date AS DATE) <= CAST(@endDate AS DATE))
+                AND (@requestBy IS NULL OR PIC LIKE '%' + @requestBy + '%');
+        ";
+
+                using (var command = new SqlCommand(query, connection))
                 {
-                    var lwos = new List<LWOModel>();
-                    while (reader.Read())
+                    // Add parameters
+                    command.Parameters.AddWithValue("@startDate", (object)startDate ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@endDate", (object)endDate ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@requestBy", (object)requestBy ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@offset", (pageNumber - 1) * pageSize);
+                    command.Parameters.AddWithValue("@pageSize", pageSize);
+
+                    // Execute and read results
+                    using (var reader = await command.ExecuteReaderAsync())
                     {
-                        lwos.Add(new LWOModel
+                        // First result set: LWO records
+                        while (await reader.ReadAsync())
                         {
-                            ID = reader.GetGuid(reader.GetOrdinal("ID")),
-                            WONumber = reader.GetString(reader.GetOrdinal("WO_Number")),
-                            WODate = reader.GetDateTime(reader.GetOrdinal("WO_Date")),
-                            WOType = reader.GetString(reader.GetOrdinal("WO_Type")),
-                            Activity = reader.GetString(reader.GetOrdinal("Activity")),
-                            HourMeter = reader.GetInt32(reader.GetOrdinal("HM")),
-                            TimeStart = reader.GetString(reader.GetOrdinal("Time_Start")),
-                            TimeEnd = reader.GetString(reader.GetOrdinal("Time_End")),
-                            PIC = reader.GetString(reader.GetOrdinal("PIC")),
-                            LWOType = reader.GetString(reader.GetOrdinal("LWO_Type")),
-                            Version = reader.GetInt32(reader.GetOrdinal("Version"))
-                        });
+                            lwoList.Add(new LWOModel
+                            {
+                                ID = reader.GetGuid(reader.GetOrdinal("ID")),
+                                WONumber = reader.GetString(reader.GetOrdinal("WO_Number")),
+                                WODate = reader.GetDateTime(reader.GetOrdinal("WO_Date")),
+                                WOType = reader.GetString(reader.GetOrdinal("WO_Type")),
+                                Activity = reader.GetString(reader.GetOrdinal("Activity")),
+                                HourMeter = reader.GetInt32(reader.GetOrdinal("HM")),
+                                TimeStart = reader.GetString(reader.GetOrdinal("Time_Start")),
+                                TimeEnd = reader.GetString(reader.GetOrdinal("Time_End")),
+                                PIC = reader.GetString(reader.GetOrdinal("PIC")),
+                                LWOType = reader.GetString(reader.GetOrdinal("LWO_Type")),
+                                Version = reader.GetInt32(reader.GetOrdinal("Version"))
+                            });
+                        }
+
+                        // Move to the second result set: Total count
+                        if (await reader.NextResultAsync() && await reader.ReadAsync())
+                        {
+                            totalCount = reader.GetInt32(0);
+                        }
                     }
-                    return lwos;
                 }
             }
+
+            return (lwoList, totalCount);
         }
+
 
         public async Task<LWOModel> GetById(Guid id)
         {

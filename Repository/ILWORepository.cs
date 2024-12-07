@@ -6,7 +6,7 @@ namespace worklog_api.Repository
 {
     public interface ILWORepository
     {
-        Task<IEnumerable<LWOModel>> GetAll();
+        Task<(IEnumerable<LWOModel>, int totalCount)> GetAll(int pageNumber, int pageSize, string sortBy, string sortDirection, DateTime? startDate, DateTime? endDate, string requestBy);
         Task<LWOModel> GetById(Guid id);  // Method to get LWO by ID
         Task<Guid> Create(LWOModel lwo);        // Method to create a new LWO
         Task Update(LWOModel lwo);        // Method to update an existing LWO

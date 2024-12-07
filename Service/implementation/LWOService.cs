@@ -18,9 +18,9 @@ namespace worklog_api.Service
             _fileUploadHelper = fileUploadHelper;
         }
 
-        public async Task<IEnumerable<LWOModel>> GetAllLWOs()
+        public async Task<(IEnumerable<LWOModel>,int totalCount)> GetAllLWOs(int pageNumber, int pageSize, string sortBy, string sortDirection, DateTime? startDate, DateTime? endDate, string requestBy)
         {
-            return await _lwoRepository.GetAll();
+            return await _lwoRepository.GetAll(pageNumber, pageSize, sortBy, sortDirection, startDate, endDate, requestBy);
         }
 
         public async Task<LWOModel> GetLWOById(Guid id)

@@ -24,9 +24,17 @@ namespace worklog_api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string sortBy = "Request_By",
+            [FromQuery] string sortDirection = "ASC",
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] string requestBy = null,
+            [FromQuery] string status = null)  // New status parameter)
         {
-            var lwos = await _lwoService.GetAllLWOs();
+            var (lwos,totalCount) = await _lwoService.GetAllLWOs(pageNumber, pageSize, sortBy, sortDirection, startDate, endDate, requestBy);
             return Ok(new
             {
                 StatusCode = 200,
