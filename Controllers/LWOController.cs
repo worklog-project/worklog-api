@@ -24,9 +24,17 @@ namespace worklog_api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string sortBy = "Request_By",
+            [FromQuery] string sortDirection = "ASC",
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] string requestBy = null,
+            [FromQuery] string status = null)  // New status parameter)
         {
-            var lwos = await _lwoService.GetAllLWOs();
+            var (lwos,totalCount) = await _lwoService.GetAllLWOs(pageNumber, pageSize, sortBy, sortDirection, startDate, endDate, requestBy);
             return Ok(new
             {
                 StatusCode = 200,
@@ -109,27 +117,24 @@ namespace worklog_api.Controllers
 
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] LWOCreateDto lwoDto)
+        public async Task<IActionResult> Update(Guid id, [FromForm] String lwoJson, [FromForm] IFormFileCollection images)
         {
-            var existingLwo = await _lwoService.GetLWOById(id);
-            if (existingLwo == null)
-                return NotFound(new
+
+            // Basic validation
+            if (string.IsNullOrWhiteSpace(lwoJson))
+            {
+                return BadRequest(new
                 {
-                    StatusCode = 404,
-                    Message = "LWO not found"
+                    StatusCode = 400,
+                    Message = "LWO data is required"
                 });
+            }
 
-            existingLwo.WONumber = lwoDto.WONumber;
-            existingLwo.WOType = lwoDto.WOType;
-            existingLwo.Activity = lwoDto.Activity;
-            existingLwo.HourMeter = lwoDto.HourMeter;
-            existingLwo.TimeStart = lwoDto.TimeStart;
-            existingLwo.TimeEnd = lwoDto.TimeEnd;
-            existingLwo.PIC = lwoDto.PIC;
-            existingLwo.LWOType = lwoDto.LWOType;
-            existingLwo.Version = lwoDto.Version;
+            var user = JWT.GetUserInfo(HttpContext);
+            var lwo = JsonConvert.DeserializeObject<LWOModel>(lwoJson);
+            lwo.UpdatedBy = user.username;
 
-            await _lwoService.UpdateLWO(existingLwo);
+            await _lwoService.UpdateLWO(id, lwo, images);
 
             var updatedLwo = await _lwoService.GetLWOById(id);
 
