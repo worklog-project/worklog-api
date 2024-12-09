@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
+using worklog_api.helper;
 using worklog_api.Model;
 using worklog_api.Model.dto;
 using worklog_api.Service;
@@ -21,9 +24,17 @@ namespace worklog_api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string sortBy = "Request_By",
+            [FromQuery] string sortDirection = "ASC",
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] string requestBy = null,
+            [FromQuery] string status = null)  // New status parameter)
         {
-            var lwos = await _lwoService.GetAllLWOs();
+            var (lwos,totalCount) = await _lwoService.GetAllLWOs(pageNumber, pageSize, sortBy, sortDirection, startDate, endDate, requestBy);
             return Ok(new
             {
                 StatusCode = 200,
@@ -52,82 +63,78 @@ namespace worklog_api.Controllers
             });
         }
 
+        [Route("create-lwo")]
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] LWOCreateDto lwoDto)
+        public async Task<IActionResult> Create([FromForm] string lwoJson, [FromForm] IFormFileCollection images)
         {
-            if (!ModelState.IsValid)
+            // Basic validation
+            if (string.IsNullOrWhiteSpace(lwoJson))
+            {
                 return BadRequest(new
                 {
                     StatusCode = 400,
-                    Message = "Invalid data",
-                    Errors = ModelState
+                    Message = "LWO data is required"
                 });
+            }
 
-            // Mapping LWO DTO to Model
-            var lwo = new LWOModel
+            var user = JWT.GetUserInfo(HttpContext);
+
+            // Forward to service layer with raw data
+            try
             {
-                ID = Guid.NewGuid(),
-                WONumber = lwoDto.WONumber,
-                WODate = DateTime.Now,  // assuming WODate is the current date, you can modify this if needed
-                WOType = lwoDto.WOType,
-                Activity = lwoDto.Activity,
-                HourMeter = lwoDto.HourMeter,
-                TimeStart = lwoDto.TimeStart,
-                TimeEnd = lwoDto.TimeEnd,
-                PIC = lwoDto.PIC,
-                LWOType = lwoDto.LWOType,
-                Version = lwoDto.Version,
-                Metadata = lwoDto.Metadata?.Select(metaDto => new LWOMetadataModel
+                var lwoDto = JsonConvert.DeserializeObject<LWOCreateDto>(lwoJson);
+                lwoDto.CreatedBy = user.username;
+                lwoDto.UpdatedBy = user.username;
+
+                var createdLwo = await _lwoService.CreateLWO(lwoDto, images);
+
+                return CreatedAtAction(nameof(GetById), new { id = createdLwo.ID }, new
                 {
-                    ID = Guid.NewGuid(),
-                    LWOID = Guid.NewGuid(),  // this will be set when saving to the DB
-                    Komponen = metaDto.Komponen,
-                    Keterangan = metaDto.Keterangan,
-                    KodeUnit = metaDto.KodeUnit,
-                    Version = metaDto.Version,
-                    Images = metaDto.LWOImages?.Select(imgDto => new LWOImageModel
-                    {
-                        ID = Guid.NewGuid(),
-                        Path = imgDto.Path,
-                        ImageName = imgDto.ImageName
-                    }).ToList()
-                }).ToList()
-            };
-
-            // Service call to create LWO along with metadata and images
-            await _lwoService.CreateLWO(lwo);
-
-            return CreatedAtAction(nameof(GetById), new { id = lwo.ID }, new
+                    StatusCode = 201,
+                    Message = "LWO created successfully",
+                    Data = createdLwo
+                });
+            }
+            catch (ValidationException ex)
             {
-                StatusCode = 201,
-                Message = "LWO created successfully",
-                Data = lwo
-            });
+                return BadRequest(new
+                {
+                    StatusCode = 400,
+                    Message = "Validation failed",
+                    Errors = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    StatusCode = 500,
+                    Message = "An error occurred while creating LWO",
+                    Error = ex.Message
+                });
+            }
         }
 
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] LWOCreateDto lwoDto)
+        public async Task<IActionResult> Update(Guid id, [FromForm] String lwoJson, [FromForm] IFormFileCollection images)
         {
-            var existingLwo = await _lwoService.GetLWOById(id);
-            if (existingLwo == null)
-                return NotFound(new
+
+            // Basic validation
+            if (string.IsNullOrWhiteSpace(lwoJson))
+            {
+                return BadRequest(new
                 {
-                    StatusCode = 404,
-                    Message = "LWO not found"
+                    StatusCode = 400,
+                    Message = "LWO data is required"
                 });
+            }
 
-            existingLwo.WONumber = lwoDto.WONumber;
-            existingLwo.WOType = lwoDto.WOType;
-            existingLwo.Activity = lwoDto.Activity;
-            existingLwo.HourMeter = lwoDto.HourMeter;
-            existingLwo.TimeStart = lwoDto.TimeStart;
-            existingLwo.TimeEnd = lwoDto.TimeEnd;
-            existingLwo.PIC = lwoDto.PIC;
-            existingLwo.LWOType = lwoDto.LWOType;
-            existingLwo.Version = lwoDto.Version;
+            var user = JWT.GetUserInfo(HttpContext);
+            var lwo = JsonConvert.DeserializeObject<LWOModel>(lwoJson);
+            lwo.UpdatedBy = user.username;
 
-            await _lwoService.UpdateLWO(existingLwo);
+            await _lwoService.UpdateLWO(id, lwo, images);
 
             var updatedLwo = await _lwoService.GetLWOById(id);
 

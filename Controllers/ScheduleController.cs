@@ -165,7 +165,6 @@ public class ScheduleController : ControllerBase
     public async Task<IActionResult> GetExcelReportByMonth([FromQuery] string month)
     {
         var scheduleByMonth = await _scheduleService.GetScheduleByMonth(month);
-        Console.WriteLine(scheduleByMonth);
         // Explicitly set headers to force download
         Response.Headers.Add("Content-Disposition", $"attachment; filename=Achievement_Report_{DateTime.Now:yyyyMMdd}.xlsx");
         return File(
