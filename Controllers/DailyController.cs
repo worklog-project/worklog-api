@@ -138,7 +138,7 @@ public class DailyController : ControllerBase
     public async Task<IActionResult> DeleteFormDaily([FromQuery] string id)
     {
         var response =  await _dailyService.DeleteFormDaily(id);
-        return Ok(new ApiResponse<bool>()
+        return Ok(new ApiResponse<Boolean>()
         {
             StatusCode = 200,
             Message = "success get daily detail",
