@@ -20,6 +20,7 @@ namespace worklog_api.Model
         public string PIC { get; set; }
         public string LWOType { get; set; }
         public string KodeUnit { get; set; }
+        public string GroupLeader { get; set; }
         public int Version { get; set; }
         public string CreatedBy { get; set; }
         public string UpdatedBy { get; set; }

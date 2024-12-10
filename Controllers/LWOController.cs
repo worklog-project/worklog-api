@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using DocumentFormat.OpenXml.Office2021.Excel.RichDataWebImage;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System;
@@ -115,6 +116,32 @@ namespace worklog_api.Controllers
             }
         }
 
+        [Route("create-metadata")]
+        [HttpPost]
+        public async Task<IActionResult> CreateMetadataByLWOID([FromQuery] Guid lwoId, [FromForm] string metadataJson, IFormFileCollection images)
+        {
+            // Basic validation
+            if (string.IsNullOrWhiteSpace(metadataJson))
+            {
+                return BadRequest(new
+                {
+                    StatusCode = 400,
+                    Message = "Metadata is required"
+                });
+            }
+
+            var user = JWT.GetUserInfo(HttpContext);
+            var metadata = JsonConvert.DeserializeObject<LWOMetadataCreateDto>(metadataJson);
+
+            await _lwoService.CreateMetadataByLWOID(lwoId, metadata, images, user);
+
+            return Ok(new
+            {
+                StatusCode = 200,
+                Message = "Metadata created successfully",
+                Data = metadata
+            });
+        }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromForm] String lwoJson, [FromForm] IFormFileCollection images)
@@ -163,6 +190,18 @@ namespace worklog_api.Controllers
                 StatusCode = 200,
                 Message = "LWO deleted successfully",
                 Data = existingLwo
+            });
+        }
+
+        [Route("delete-metadata")]
+        [HttpDelete]
+        public async Task<IActionResult> DeleteMedata([FromQuery] Guid metadataId)
+        {
+            await _lwoService.DeleteMetadataByID(metadataId);
+            return Ok(new
+            {
+                StatusCode = 200,
+                Message = "Metadata deleted successfully"
             });
         }
     }
