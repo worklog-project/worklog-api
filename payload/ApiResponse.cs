@@ -9,7 +9,7 @@ public class ApiResponse<T>
     public int StatusCode { get; set; }
     public string Message { get; set; }
     
-    [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public T Data { get; set; }
 
     [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
