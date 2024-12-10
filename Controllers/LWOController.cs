@@ -144,24 +144,12 @@ namespace worklog_api.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, [FromForm] String lwoJson, [FromForm] IFormFileCollection images)
+        public async Task<IActionResult> Update(Guid id, [FromBody] LWOModel lwoJson)
         {
-
-            // Basic validation
-            if (string.IsNullOrWhiteSpace(lwoJson))
-            {
-                return BadRequest(new
-                {
-                    StatusCode = 400,
-                    Message = "LWO data is required"
-                });
-            }
-
             var user = JWT.GetUserInfo(HttpContext);
-            var lwo = JsonConvert.DeserializeObject<LWOModel>(lwoJson);
-            lwo.UpdatedBy = user.username;
+            lwoJson.UpdatedBy = user.username;
 
-            await _lwoService.UpdateLWO(id, lwo, images);
+            await _lwoService.UpdateLWO(id, lwoJson);
 
             var updatedLwo = await _lwoService.GetLWOById(id);
 

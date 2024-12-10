@@ -21,7 +21,7 @@ namespace worklog_api.Model
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         // Navigation properties
-        public LWOModel LWO { get; set; }
+        public LWOModel? LWO { get; set; }
         public List<LWOImageModel>? Images { get; set; }
     }
 }

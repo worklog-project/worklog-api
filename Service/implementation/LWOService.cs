@@ -250,7 +250,7 @@ namespace worklog_api.Service
             }
         }
 
-        public async Task UpdateLWO(Guid id, LWOModel lwo, IFormFileCollection images)
+        public async Task UpdateLWO(Guid id, LWOModel lwo)
         {
             try
             {
@@ -275,98 +275,6 @@ namespace worklog_api.Service
                 existingLwo.UpdatedBy = lwo.UpdatedBy;
                 existingLwo.LWOType = lwo.LWOType;
                 existingLwo.Version = lwo.Version;
-
-                
-                foreach (var image in images)
-                {
-                    if (image.Length > 0)
-                    {
-                        // Add to image map
-                        imageMap[image.FileName] = image;
-                    }
-                }
-
-                //compare lwo metadatas exist with new if not exist add or delete if not exist in new update request
-                foreach (var metadata in lwo.Metadata)
-                {
-                    var existingMetadata = existingLwo.Metadata.FirstOrDefault(x => x.ID == metadata.ID);
-
-                    if (existingMetadata == null)
-                    {
-                        metadata.Images ??= new List<LWOImageModel>();
-                        metadata.CreatedAt = DateTime.Now;
-                        metadata.UpdatedAt = DateTime.Now;
-                        metadata.CreatedBy = lwo.UpdatedBy;
-                        metadata.UpdatedBy = lwo.UpdatedBy;
-
-                        foreach (var imageName in metadata.ImagesName)
-                        {
-                            Console.WriteLine($"Processing Image Name: {imageName}");
-
-                            // Skip empty image names
-                            if (string.IsNullOrWhiteSpace(imageName))
-                            {
-                                Console.WriteLine("Skipping empty image name");
-                                continue;
-                            }
-
-                            // Detailed logging and validation
-                            if (!imageMap.TryGetValue(imageName, out var imageFile))
-                            {
-                                Console.WriteLine($"Image not found in map: {imageName}");
-                                throw new ArgumentException($"Image file not found: {imageName}");
-                            }
-
-                            // Defensive null checks before file validation
-                            ArgumentNullException.ThrowIfNull(imageFile, nameof(imageFile));
-                            ArgumentNullException.ThrowIfNull(_fileUploadHelper, nameof(_fileUploadHelper));
-
-                            // Validate file with null-safe check
-                            bool isValidFile;
-                            try
-                            {
-                                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
-                                var maxFileSize = 2 * 1024 * 1024; // 2MB 
-
-                                // Defensive null checking in method call
-                                isValidFile = _fileUploadHelper.IsValidFile(
-                                    imageFile,
-                                    allowedExtensions ?? Array.Empty<string>(),
-                                    maxFileSize > 0 ? maxFileSize : int.MaxValue
-                                );
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine($"Error in file validation: {ex}");
-                                throw new InvalidOperationException($"File validation failed for {imageName}", ex);
-                            }
-
-                            // Check validation result
-                            if (!isValidFile)
-                            {
-                                throw new ArgumentException($"Invalid file: {imageName}. Please check file type and size.");
-                            }
-
-                            // Upload file
-                            var (fileName, filePath) = await _fileUploadHelper.UploadFileAsync(imageFile, "lwo");
-                            var lwoImage = new LWOImageModel
-                            {
-                                Path = filePath,
-                                ImageName = fileName,
-                                CreatedAt = DateTime.Now,
-                                UpdatedAt = DateTime.Now,
-                                CreatedBy = lwo.UpdatedBy,
-                                UpdatedBy = lwo.UpdatedBy
-                            };
-
-                            metadata.Images.Add(lwoImage);
-                        }
-
-                      
-                        existingLwo.Metadata.Add(metadata);
-                    }
-                    
-                }
 
                 await _lwoRepository.Update(lwo);
             }

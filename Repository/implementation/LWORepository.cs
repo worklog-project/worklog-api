@@ -365,6 +365,7 @@ namespace worklog_api.Repository
                         UPDATE LWO SET 
                         WO_Number = @WONumber,
                         WO_Type = @WOType,
+                        WO_Date = @WODate,
                         Activity = @Activity,
                         HM = @HM,
                         Time_Start = @TimeStart, 
@@ -373,6 +374,7 @@ namespace worklog_api.Repository
                         LWO_Type = @LWOType,
                         Version = @Version,
                         Kode_Unit = @KodeUnit,
+                        Group_Leader = @GroupLeader,
                         Updated_At = @UpdatedAt,
                         Updated_By = @UpdatedBy
                         WHERE ID = @ID", connection, transaction);
@@ -380,6 +382,7 @@ namespace worklog_api.Repository
                         updateLwoCommand.Parameters.AddWithValue("@ID", lwo.ID);
                         updateLwoCommand.Parameters.AddWithValue("@WONumber", lwo.WONumber);
                         updateLwoCommand.Parameters.AddWithValue("@WOType", lwo.WOType);
+                        updateLwoCommand.Parameters.AddWithValue("@WODate", lwo.WODate);
                         updateLwoCommand.Parameters.AddWithValue("@Activity", lwo.Activity);
                         updateLwoCommand.Parameters.AddWithValue("@HM", lwo.HourMeter);
                         updateLwoCommand.Parameters.AddWithValue("@TimeStart", lwo.TimeStart);
@@ -388,137 +391,12 @@ namespace worklog_api.Repository
                         updateLwoCommand.Parameters.AddWithValue("@LWOType", lwo.LWOType);
                         updateLwoCommand.Parameters.AddWithValue("@Version", lwo.Version + 1);
                         updateLwoCommand.Parameters.AddWithValue("@KodeUnit", lwo.KodeUnit);
+                        updateLwoCommand.Parameters.AddWithValue("@GroupLeader", lwo.GroupLeader);
                         updateLwoCommand.Parameters.AddWithValue("@UpdatedAt", DateTime.Now);
                         updateLwoCommand.Parameters.AddWithValue("@UpdatedBy", lwo.UpdatedBy);
 
                         await updateLwoCommand.ExecuteNonQueryAsync();
-
-                        // Handle metadata
-                        var existingMetadataCommand = new SqlCommand(@"
-                        SELECT ID FROM LWO_Metadata WHERE LWO_ID = @LWOID", connection, transaction);
-                        existingMetadataCommand.Parameters.AddWithValue("@LWOID", lwo.ID);
-
-                        var existingMetadataIds = new List<Guid>();
-                        using (var reader = await existingMetadataCommand.ExecuteReaderAsync())
-                        {
-                            while (reader.Read())
-                            {
-                                existingMetadataIds.Add(reader.GetGuid(0));
-                            }
-                        }
-
-                        var newMetadataIds = lwo.Metadata?.Select(m => m.ID).ToHashSet() ?? new HashSet<Guid>();
-
-                        // Delete images and metadata not in the request
-                        foreach (var id in existingMetadataIds.Except(newMetadataIds))
-                        {
-                            // Delete images associated with metadata
-                            var deleteImagesCommand = new SqlCommand(@"
-                    DELETE FROM LWO_Image WHERE LWO_Metadata_ID = @LWOMetadataID", connection, transaction);
-                            deleteImagesCommand.Parameters.AddWithValue("@LWOMetadataID", id);
-                            await deleteImagesCommand.ExecuteNonQueryAsync();
-
-                            // Delete metadata
-                            var deleteMetadataCommand = new SqlCommand(@"
-                    DELETE FROM LWO_Metadata WHERE ID = @ID", connection, transaction);
-                            deleteMetadataCommand.Parameters.AddWithValue("@ID", id);
-                            await deleteMetadataCommand.ExecuteNonQueryAsync();
-                        }
-
-                        // Insert or update metadata and images as before
-                        foreach (var metadata in lwo.Metadata ?? Enumerable.Empty<LWOMetadataModel>())
-                        {
-                            var newMetadataID = Guid.Empty;
-                            if (!existingMetadataIds.Contains(metadata.ID))
-                            {
-
-                                // Insert new metadata
-                                newMetadataID = Guid.NewGuid();
-                                var insertMetadataCommand = new SqlCommand(@"
-                                INSERT INTO LWO_Metadata 
-                                (ID, LWO_ID, Komponen, Keterangan, Version, Created_By, Created_At, Updated_By, Updated_At)
-                                VALUES (@ID, @LWOID, @Komponen, @Keterangan, @Version, @CreatedBy, @CreatedAt, @UpdatedBy, @UpdatedAt)", connection, transaction);
-
-                                insertMetadataCommand.Parameters.AddWithValue("@ID", newMetadataID);
-                                insertMetadataCommand.Parameters.AddWithValue("@LWOID", lwo.ID);
-                                insertMetadataCommand.Parameters.AddWithValue("@Komponen", metadata.Komponen);
-                                insertMetadataCommand.Parameters.AddWithValue("@Keterangan", metadata.Keterangan);
-                                insertMetadataCommand.Parameters.AddWithValue("@Version", metadata.Version);
-                                insertMetadataCommand.Parameters.AddWithValue("@CreatedBy", metadata.CreatedBy);
-                                insertMetadataCommand.Parameters.AddWithValue("@CreatedAt", metadata.CreatedAt);
-                                insertMetadataCommand.Parameters.AddWithValue("@UpdatedBy", metadata.UpdatedBy);
-                                insertMetadataCommand.Parameters.AddWithValue("@UpdatedAt", metadata.UpdatedAt);
-
-                                await insertMetadataCommand.ExecuteNonQueryAsync();
-                            }
-                            else
-                            {
-                                // Update existing metadata
-                                var updateMetadataCommand = new SqlCommand(@"
-                                UPDATE LWO_Metadata SET 
-                                Komponen = @Komponen,
-                                Keterangan = @Keterangan,
-                                Version = @Version,
-                                Updated_By = @UpdatedBy,
-                                Updated_At = @UpdatedAt
-                                WHERE ID = @ID", connection, transaction);
-
-                                updateMetadataCommand.Parameters.AddWithValue("@ID", metadata.ID);
-                                updateMetadataCommand.Parameters.AddWithValue("@Komponen", metadata.Komponen);
-                                updateMetadataCommand.Parameters.AddWithValue("@Keterangan", metadata.Keterangan);
-                                updateMetadataCommand.Parameters.AddWithValue("@Version", metadata.Version);
-                                updateMetadataCommand.Parameters.AddWithValue("@UpdatedBy", lwo.UpdatedBy);
-                                updateMetadataCommand.Parameters.AddWithValue("@UpdatedAt", DateTime.Now);
-
-                                await updateMetadataCommand.ExecuteNonQueryAsync();
-                            }
-
-                            // Handle images for each metadata
-                            var existingImageCommand = new SqlCommand(@"
-                            SELECT ID FROM LWO_Image WHERE LWO_Metadata_ID = @LWOMetadataID", connection, transaction);
-                            existingImageCommand.Parameters.AddWithValue("@LWOMetadataID", metadata.ID);
-
-                            var existingImageIds = new List<Guid>();
-                            using (var reader = await existingImageCommand.ExecuteReaderAsync())
-                            {
-                                while (reader.Read())
-                                {
-                                    existingImageIds.Add(reader.GetGuid(0));
-                                }
-                            }
-
-                            var newImageIds = metadata.Images?.Select(i => i.ID).ToHashSet() ?? new HashSet<Guid>();
-
-                            // Delete images not in the request
-                            foreach (var id in existingImageIds.Except(newImageIds))
-                            {
-                                var deleteImageCommand = new SqlCommand(@"
-                                DELETE FROM LWO_Image WHERE ID = @ID", connection, transaction);
-                                deleteImageCommand.Parameters.AddWithValue("@ID", id);
-                                await deleteImageCommand.ExecuteNonQueryAsync();
-                            }
-
-                            // Insert new images
-                            foreach (var image in metadata.Images?.Where(i => !existingImageIds.Contains(i.ID)) ?? Enumerable.Empty<LWOImageModel>())
-                            {
-                                var insertImageCommand = new SqlCommand(@"
-                                INSERT INTO LWO_Image 
-                                (ID, LWO_Metadata_ID, Path, Image_Name, Created_By, Created_At, Updated_By, Updated_At)
-                                VALUES (@ID, @LWOMetadataID, @Path, @ImageName, @CreatedBy, @CreatedAt, @UpdatedBy, @UpdatedAt)", connection, transaction);
-
-                                insertImageCommand.Parameters.AddWithValue("@ID", Guid.NewGuid());
-                                insertImageCommand.Parameters.AddWithValue("@LWOMetadataID", newMetadataID);
-                                insertImageCommand.Parameters.AddWithValue("@Path", image.Path);
-                                insertImageCommand.Parameters.AddWithValue("@ImageName", image.ImageName);
-                                insertImageCommand.Parameters.AddWithValue("@CreatedBy", image.CreatedBy);
-                                insertImageCommand.Parameters.AddWithValue("@CreatedAt", image.CreatedAt);
-                                insertImageCommand.Parameters.AddWithValue("@UpdatedBy", lwo.UpdatedBy);
-                                insertImageCommand.Parameters.AddWithValue("@UpdatedAt", DateTime.Now);
-
-                                await insertImageCommand.ExecuteNonQueryAsync();
-                            }
-                        }
-
+                    
                         transaction.Commit();
                     }
                     catch

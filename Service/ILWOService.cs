@@ -11,7 +11,7 @@ namespace worklog_api.Service
         Task<LWOModel> GetLWOById(Guid id); // Method to get LWO by ID
         Task<LWOModel> CreateLWO(LWOCreateDto lwoDTO, IFormFileCollection images);    // Method to create a new LWO
         Task<LWOModel> CreateMetadataByLWOID(Guid lwoID, LWOMetadataCreateDto metadata, IFormFileCollection images, UserModel user);
-        Task UpdateLWO(Guid id, LWOModel lwo, IFormFileCollection images);    // Method to update an existing LWO
+        Task UpdateLWO(Guid id, LWOModel lwo);    // Method to update an existing LWO
         Task DeleteLWO(Guid id);         // Method to delete an LWO by ID
         Task DeleteMetadataByID(Guid metadataId);
     }
