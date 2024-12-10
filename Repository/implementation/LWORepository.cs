@@ -211,7 +211,7 @@ namespace worklog_api.Repository
                         id = Guid.NewGuid(); // Generate new ID for LWO
                         command.Parameters.AddWithValue("@ID", id);
                         command.Parameters.AddWithValue("@WONumber", lwo.WONumber ?? string.Empty);
-                        command.Parameters.AddWithValue("@WODate", lwo.WODate != null);
+                        command.Parameters.AddWithValue("@WODate", lwo.WODate);
                         command.Parameters.AddWithValue("@WOType", lwo.WOType ?? string.Empty);
                         command.Parameters.AddWithValue("@Activity", lwo.Activity ?? string.Empty);
                         command.Parameters.AddWithValue("@HM", lwo.HourMeter);
