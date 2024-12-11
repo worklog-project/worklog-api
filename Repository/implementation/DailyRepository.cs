@@ -186,7 +186,7 @@ VALUES (@Id, @date, @cn_id, @egi_id, @count)";
             
             // update Daily
             var updatedScheduleDetail = @"UPDATE Schedule_Detail SET Is_Done = 1 WHERE id = @id";
-
+            
             // validation if daily already exist
             var checkDailyDetail = @"SELECT COUNT_BIG(*) 
             FROM daily_work_log_detail 
@@ -511,6 +511,11 @@ WHERE daily_work_log_detail.id = @id";
             SET count = count - 1 OUTPUT INSERTED.count
             WHERE id = @dailyWorkLogId";
             
+            // update Is_Done
+            var updatedIsDoneQuery = @"UPDATE Schedule_Detail 
+            SET Is_Done = 0
+            WHERE Daily_ID = @dailyId";
+            
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
@@ -542,6 +547,11 @@ WHERE daily_work_log_detail.id = @id";
                         updateCountCmd.Parameters.AddWithValue("@dailyWorkLogId", dailyWorkLogId);
                         await updateCountCmd.ExecuteNonQueryAsync();
 
+                        // Update the is_done to false in the daily work log
+                        var updateIsDoneCmd = new SqlCommand(updatedIsDoneQuery, connection, transaction);
+                        updateIsDoneCmd.Parameters.AddWithValue("@dailyId", dailyWorkLogId);
+                        await updateIsDoneCmd.ExecuteNonQueryAsync();
+                        
                         await transaction.CommitAsync();
                         _logger.LogInformation($"Successfully deleted daily work log detail with ID: {scheduleId}");
                         return deleteResult > 0;
