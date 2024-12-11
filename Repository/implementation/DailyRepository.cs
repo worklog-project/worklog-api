@@ -385,10 +385,7 @@ VALUES (@Id, @date, @cn_id, @egi_id, @count)";
         }
     }
 }
-
-
         
-
         public async Task<DailyModel> getDailyDetailById(Guid id)
         {
             DailyModel dailyModel = null;
@@ -486,6 +483,7 @@ WHERE daily_work_log_detail.id = @id";
         public async Task<bool> DeleteAllDailyWorkLogs(Guid scheduleId)
         {
             var query = @"DELETE FROM daily_work_log WHERE id = @id";
+            
 
             using (var connection = new SqlConnection(_connectionString))
             {
@@ -503,17 +501,59 @@ WHERE daily_work_log_detail.id = @id";
         public async Task<bool> DeleteFormDaily(Guid scheduleId)
         {
             var query = @"DELETE FROM daily_work_log_detail WHERE id = @id";
-
+            
+            // get daily work log
+            var selectDailyWorklogQuery = @"SELECT daily_work_log_id FROM daily_work_log_detail  
+            WHERE id = @id";
+            
+            // update count
+            var updatedCountQuery = @"UPDATE daily_work_log 
+            SET count = count - 1 OUTPUT INSERTED.count
+            WHERE id = @dailyWorkLogId";
+            
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
+                
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        // First, retrieve the associated daily_work_log_id
+                        var getDailyWorklogCmd = new SqlCommand(selectDailyWorklogQuery, connection, transaction);
+                        getDailyWorklogCmd.Parameters.AddWithValue("@id", scheduleId);
+                
+                        var dailyWorkLogId = await getDailyWorklogCmd.ExecuteScalarAsync();
+                
+                        if (dailyWorkLogId == null)
+                        {
+                            _logger.LogWarning($"No daily work log detail found with ID: {scheduleId}");
+                            await transaction.RollbackAsync();
+                            return false;
+                        }
 
-                var sqlCommand = new SqlCommand(query, connection);
-                sqlCommand.Parameters.AddWithValue("@id", scheduleId);
+                        // Delete the specific daily work log detail
+                        var deleteCmd = new SqlCommand(query, connection, transaction);
+                        deleteCmd.Parameters.AddWithValue("@id", scheduleId);
+                        var deleteResult = await deleteCmd.ExecuteNonQueryAsync();
 
-                var executeNonQueryAsync = await sqlCommand.ExecuteNonQueryAsync();
+                        // Update the count in the daily work log
+                        var updateCountCmd = new SqlCommand(updatedCountQuery, connection, transaction);
+                        updateCountCmd.Parameters.AddWithValue("@dailyWorkLogId", dailyWorkLogId);
+                        await updateCountCmd.ExecuteNonQueryAsync();
 
-                return executeNonQueryAsync > 0;
+                        await transaction.CommitAsync();
+                        _logger.LogInformation($"Successfully deleted daily work log detail with ID: {scheduleId}");
+                        return deleteResult > 0;
+                    }
+                    catch(Exception e)
+                    {
+                        // Roll back the transaction if there's an error
+                        await transaction.RollbackAsync();
+                        _logger.LogWarning($"Transaction failed: {e.Message}");
+                        throw;
+                    }
+                }
             }
         }
     }

@@ -28,6 +28,7 @@
         public string PIC { get; set; }
         public string LWOType { get; set; }
         public string KodeUnit { get; set; }
+        public string GroupLeader { get; set; }
         public int Version { get; set; }
         public List<LWOMetadataCreateDto> Metadatas { get; set; }
         public string CreatedBy { get; set; }
