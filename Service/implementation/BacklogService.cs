@@ -32,7 +32,7 @@ namespace worklog_api.Service.implementation
             {
                 // Validate file
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
-                var maxFileSize = 2 * 1024 * 1024; // 2MB
+                var maxFileSize = 10 * 1024 * 1024; // 2MB
 
                 if (!_fileUploadHelper.IsValidFile(imageDTO.ImageFile, allowedExtensions, maxFileSize))
                 {

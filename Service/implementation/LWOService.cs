@@ -105,7 +105,7 @@ namespace worklog_api.Service
                     try
                     {
                         var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
-                        var maxFileSize = 2 * 1024 * 1024; // 2MB 
+                        var maxFileSize = 10 * 1024 * 1024; // 10MB 
 
                         // Defensive null checking in method call
                         isValidFile = _fileUploadHelper.IsValidFile(
@@ -207,7 +207,7 @@ namespace worklog_api.Service
                     try
                     {
                         var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
-                        var maxFileSize = 2 * 1024 * 1024; // 2MB 
+                        var maxFileSize = 10 * 1024 * 1024; // 2MB 
 
                         // Defensive null checking in method call
                         isValidFile = _fileUploadHelper.IsValidFile(
